@@ -1,0 +1,15 @@
+{
+  "minTokens": 100,
+  "minLines": 15,
+  "threshold": 5,
+  "ignore": [
+    "**/tests/**",
+    "coverage/**",
+    "graphify-out/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/package-lock.json",
+    "**/.git/**"
+  ],
+  "reporters": ["console"]
+}

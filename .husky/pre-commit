@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+echo "=== [1/4] Running Linters & Type Checks ==="
+npm run lint
+
+echo "=== [2/4] Running Duplicate Scan (jscpd) ==="
+npm run dupes
+
+echo "=== [3/4] Running Coverage Gate ==="
+npm run coverage
+
+echo "=== [4/4] Updating Knowledge Graph ==="
+if command -v graphify >/dev/null 2>&1; then
+  graphify update .
+fi
