@@ -103,19 +103,34 @@ export const AppContent: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Load project on mount
-  useEffect(() => {
-    async function init() {
-      const activeId = await getActiveProjectId();
-      const targetId = activeId || DEFAULT_PROJECT_ID;
-      const loaded = await getProject(targetId);
+  // Helper to sync URL hash with project ID
+  const updateUrlProject = useCallback((id: string) => {
+    if (window.location.hash !== `#/${id}`) {
+      window.history.pushState(null, '', `#/${id}`);
+    }
+  }, []);
 
+  // Read project ID from URL hash or storage on mount and hashchange
+  useEffect(() => {
+    async function loadFromHashOrStorage() {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      const activeId = await getActiveProjectId();
+      const targetId = hash || activeId || DEFAULT_PROJECT_ID;
+
+      const loaded = await getProject(targetId);
       if (loaded) {
+        await setActiveProjectId(loaded.id);
+        updateUrlProject(loaded.id);
         setProject(loaded);
       } else {
         const initialParsed = parseOutline(DEFAULT_OUTLINE);
+        const projectId =
+          hash ||
+          (typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : DEFAULT_PROJECT_ID);
         const initialProject: ArchitectureProject = {
-          id: DEFAULT_PROJECT_ID,
+          id: projectId,
           name: 'Full-Stack Architecture Spec',
           rawOutlineText: DEFAULT_OUTLINE,
           classes: initialParsed.classes,
@@ -129,12 +144,24 @@ export const AppContent: React.FC = () => {
           createdAt: Date.now(),
         };
         await saveProject(initialProject);
-        await setActiveProjectId(DEFAULT_PROJECT_ID);
+        await setActiveProjectId(projectId);
+        updateUrlProject(projectId);
         setProject(initialProject);
       }
     }
-    init();
-  }, []);
+
+    loadFromHashOrStorage();
+
+    const handleHashChange = () => {
+      loadFromHashOrStorage();
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
+  }, [updateUrlProject]);
 
   // Parse text whenever outline changes
   const parseResult = useMemo(() => {
@@ -311,6 +338,7 @@ export const AppContent: React.FC = () => {
     const loaded = await getProject(id);
     if (loaded) {
       await setActiveProjectId(id);
+      updateUrlProject(id);
       setProject(loaded);
       setNodePositions({});
       setSelectedEntityId(null);
@@ -318,7 +346,10 @@ export const AppContent: React.FC = () => {
   };
 
   const handleCreateProject = async (name: string) => {
-    const id = `project-${Date.now()}`;
+    const id =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `proj-${Date.now()}`;
     const newProj: ArchitectureProject = {
       id,
       name,
@@ -336,6 +367,7 @@ export const AppContent: React.FC = () => {
     };
     await saveProject(newProj);
     await setActiveProjectId(id);
+    updateUrlProject(id);
     setProject(newProj);
     setNodePositions({});
     setSelectedEntityId(null);
