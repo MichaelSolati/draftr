@@ -3,6 +3,7 @@ import {X, Copy, Check, Download, FileCode} from 'lucide-react';
 import {type ArchitectureProject} from '../../types/spec';
 import {
   exportToMermaidClassDiagram,
+  exportToMermaidERDiagram,
   exportToMermaidFlowchart,
 } from '../../lib/export/mermaid';
 
@@ -12,7 +13,7 @@ interface ExportModalProps {
   onClose: () => void;
 }
 
-type ExportTab = 'classDiagram' | 'flowchart' | 'json';
+type ExportTab = 'classDiagram' | 'erDiagram' | 'flowchart' | 'json';
 
 export const ExportModal: React.FC<ExportModalProps> = ({
   project,
@@ -30,6 +31,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   if (activeTab === 'classDiagram') {
     content = exportToMermaidClassDiagram(project);
     filename += '-class-diagram.mmd';
+  } else if (activeTab === 'erDiagram') {
+    content = exportToMermaidERDiagram(project);
+    filename += '-er-diagram.mmd';
   } else if (activeTab === 'flowchart') {
     content = exportToMermaidFlowchart(project);
     filename += '-flowchart.mmd';
@@ -39,6 +43,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         name: project.name,
         classes: project.classes,
         uiComponents: project.uiComponents,
+        tables: project.tables,
+        apiRoutes: project.apiRoutes,
+        events: project.events,
+        states: project.states,
         connections: project.connections,
       },
       null,
@@ -82,39 +90,50 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-border bg-muted/20 px-5 pt-2 gap-2 text-xs">
+        <div className="flex border-b border-border bg-muted/20 px-5 pt-2 gap-2 text-xs overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('classDiagram')}
-            className={`pb-2 px-2 font-medium border-b-2 transition-colors ${
+            className={`pb-2 px-2 font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'classDiagram'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            Mermaid Class Diagram
+            Class Diagram
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('erDiagram')}
+            className={`pb-2 px-2 font-medium border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'erDiagram'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            ER Diagram (DB)
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('flowchart')}
-            className={`pb-2 px-2 font-medium border-b-2 transition-colors ${
+            className={`pb-2 px-2 font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'flowchart'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            Mermaid UI Flowchart
+            System Flowchart
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('json')}
-            className={`pb-2 px-2 font-medium border-b-2 transition-colors ${
+            className={`pb-2 px-2 font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'json'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            Normalized JSON AST
+            JSON AST Schema
           </button>
         </div>
 
@@ -128,7 +147,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         {/* Modal Footer */}
         <div className="flex items-center justify-between border-t border-border px-5 py-3 bg-muted/20">
           <span className="text-xs text-muted-foreground">
-            Export ready for documentation & AI prompts
+            Multi-domain architecture exports for documentation & Claude
           </span>
           <div className="flex items-center gap-2">
             <button

@@ -17,14 +17,38 @@ import {type ArchitectureProject} from './types/spec';
 
 const DEFAULT_PROJECT_ID = 'default-project-1';
 
-const DEFAULT_OUTLINE = `class AuthService
+const DEFAULT_OUTLINE = `// Logic Entities
+class AuthService
   + token: string
   + login(creds: Credentials): Session -> Database.query
   - hashPassword(password: string): string
 
+class UserService
+  + getProfile(id: string): UserProfile
+  + sendWelcome(email: string): boolean
+
 class Database
   + query(sql: string): QueryResult
 
+// Database Schema
+db Users
+  + id: uuid pk
+  + email: string unique
+  + teamId: uuid fk -> Teams.id
+  + createdAt: timestamp
+
+db Teams
+  + id: uuid pk
+  + name: string
+
+// API Endpoints
+api /api/v1/auth
+  + POST /login(LoginDTO): Session -> AuthService.login
+
+// Event Streaming
+event UserRegistered(UserEvent) -> UserService.sendWelcome
+
+// UI Hierarchy
 ui App
   ui Header
     binds AuthService
@@ -35,10 +59,14 @@ ui App
 export const AppContent: React.FC = () => {
   const [project, setProject] = useState<ArchitectureProject>({
     id: DEFAULT_PROJECT_ID,
-    name: 'Sample Architecture',
+    name: 'Full-Stack Architecture Spec',
     rawOutlineText: DEFAULT_OUTLINE,
     classes: [],
     uiComponents: [],
+    tables: [],
+    apiRoutes: [],
+    events: [],
+    states: [],
     connections: [],
     updatedAt: Date.now(),
     createdAt: Date.now(),
@@ -66,10 +94,14 @@ export const AppContent: React.FC = () => {
         const initialParsed = parseOutline(DEFAULT_OUTLINE);
         const initialProject: ArchitectureProject = {
           id: DEFAULT_PROJECT_ID,
-          name: 'Sample Architecture',
+          name: 'Full-Stack Architecture Spec',
           rawOutlineText: DEFAULT_OUTLINE,
           classes: initialParsed.classes,
           uiComponents: initialParsed.uiComponents,
+          tables: initialParsed.tables,
+          apiRoutes: initialParsed.apiRoutes,
+          events: initialParsed.events,
+          states: initialParsed.states,
           connections: initialParsed.connections,
           updatedAt: Date.now(),
           createdAt: Date.now(),
@@ -97,11 +129,31 @@ export const AppContent: React.FC = () => {
       ...ui,
       position: nodePositions[ui.id] || ui.position,
     }));
+    const updatedTables = parseResult.tables.map(tbl => ({
+      ...tbl,
+      position: nodePositions[tbl.id] || tbl.position,
+    }));
+    const updatedApis = parseResult.apiRoutes.map(api => ({
+      ...api,
+      position: nodePositions[api.id] || api.position,
+    }));
+    const updatedEvents = parseResult.events.map(ev => ({
+      ...ev,
+      position: nodePositions[ev.id] || ev.position,
+    }));
+    const updatedStates = parseResult.states.map(st => ({
+      ...st,
+      position: nodePositions[st.id] || st.position,
+    }));
 
     return {
       ...project,
       classes: updatedClasses,
       uiComponents: updatedUIs,
+      tables: updatedTables,
+      apiRoutes: updatedApis,
+      events: updatedEvents,
+      states: updatedStates,
       connections: parseResult.connections,
       updatedAt: Date.now(),
     };
@@ -127,7 +179,7 @@ export const AppContent: React.FC = () => {
     setNodePositions(prev => ({...prev, [id]: position}));
   };
 
-  // Bi-directional sync: dragging connection wires appends `-> Target.method`
+  // Bi-directional sync: dragging wires adds inline calls
   const handleConnectWire = (
     sourceEntity: string,
     sourceMember: string | null,
@@ -149,11 +201,9 @@ export const AppContent: React.FC = () => {
       }
 
       if (insideTargetClass && !modified) {
-        // Look for method declaration matching sourceMember
         const methodRegex = new RegExp(`^([+\\-#])\\s*${sourceMember}\\s*\\(`);
         if (methodRegex.test(trimmed)) {
           modified = true;
-          // Check if arrow already exists
           const arrowIndex = line.indexOf('->');
           const cleanLine =
             arrowIndex !== -1 ? line.slice(0, arrowIndex).trimEnd() : line;
@@ -183,9 +233,13 @@ export const AppContent: React.FC = () => {
       id,
       name,
       rawOutlineText:
-        'class NewService\n  + doWork(): boolean\n\nui App\n  binds NewService\n',
+        'class MainService\n  + start(): void\n\nui App\n  binds MainService\n',
       classes: [],
       uiComponents: [],
+      tables: [],
+      apiRoutes: [],
+      events: [],
+      states: [],
       connections: [],
       updatedAt: Date.now(),
       createdAt: Date.now(),

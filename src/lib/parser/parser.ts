@@ -4,6 +4,13 @@ import {
   type MethodSignature,
   type MethodParameter,
   type UIComponentSpec,
+  type TableSpec,
+  type ColumnDefinition,
+  type ApiRouteSpec,
+  type ApiEndpoint,
+  type HttpMethod,
+  type EventSpec,
+  type StateSpec,
   type ConnectionEdge,
   type ParserDiagnostic,
   type Visibility,
@@ -12,6 +19,10 @@ import {
 export interface ParseResult {
   classes: ClassSpec[];
   uiComponents: UIComponentSpec[];
+  tables: TableSpec[];
+  apiRoutes: ApiRouteSpec[];
+  events: EventSpec[];
+  states: StateSpec[];
   connections: ConnectionEdge[];
   diagnostics: ParserDiagnostic[];
 }
@@ -54,12 +65,16 @@ export function parseOutline(text: string): ParseResult {
   const lines = text.split('\n');
   const classes: ClassSpec[] = [];
   const uiComponents: UIComponentSpec[] = [];
+  const tables: TableSpec[] = [];
+  const apiRoutes: ApiRouteSpec[] = [];
+  const events: EventSpec[] = [];
+  const states: StateSpec[] = [];
   const connections: ConnectionEdge[] = [];
   const diagnostics: ParserDiagnostic[] = [];
 
   interface StackItem {
     indent: number;
-    type: 'class' | 'ui';
+    type: 'class' | 'ui' | 'db' | 'api' | 'state';
     id: string;
     name: string;
   }
@@ -70,7 +85,6 @@ export function parseOutline(text: string): ParseResult {
     const lineNum = i + 1;
     const rawLine = lines[i];
 
-    // Skip empty lines or full comment lines
     if (!rawLine.trim() || rawLine.trim().startsWith('//')) {
       continue;
     }
@@ -78,14 +92,13 @@ export function parseOutline(text: string): ParseResult {
     const indent = rawLine.search(/\S/);
     const trimmed = rawLine.trim();
 
-    // Pop stack items that have greater or equal indentation
     while (stack.length > 0 && stack[stack.length - 1].indent >= indent) {
       stack.pop();
     }
 
     const parent = stack.length > 0 ? stack[stack.length - 1] : null;
 
-    // Check entity declaration: class <Name>, type <Name>, interface <Name>
+    // 1. Entity Declaration: class <Name>, type <Name>, interface <Name>
     const classMatch = trimmed.match(
       /^(class|type|interface)\s+([A-Za-z0-9_$]+)/
     );
@@ -114,12 +127,11 @@ export function parseOutline(text: string): ParseResult {
       continue;
     }
 
-    // Check UI component declaration: ui <Name>
+    // 2. UI Component Declaration: ui <Name>
     const uiMatch = trimmed.match(/^ui\s+([A-Za-z0-9_$]+)/);
     if (uiMatch) {
       const name = uiMatch[1];
       const id = `ui-${name}`;
-
       const parentUIId = parent && parent.type === 'ui' ? parent.id : undefined;
 
       const existing = uiComponents.find(u => u.name === name);
@@ -134,12 +146,11 @@ export function parseOutline(text: string): ParseResult {
         uiComponents.push(spec);
 
         if (parentUIId) {
-          const parentComponent = uiComponents.find(u => u.id === parentUIId);
-          if (parentComponent && !parentComponent.children.includes(id)) {
-            parentComponent.children.push(id);
+          const parentComp = uiComponents.find(u => u.id === parentUIId);
+          if (parentComp && !parentComp.children.includes(id)) {
+            parentComp.children.push(id);
           }
         }
-
         stack.push({indent, type: 'ui', id, name});
       } else {
         diagnostics.push({
@@ -151,7 +162,113 @@ export function parseOutline(text: string): ParseResult {
       continue;
     }
 
-    // Check UI-to-Logic binding: binds <LogicEntity>
+    // 3. Database Table Declaration: db <TableName>
+    const dbMatch = trimmed.match(/^db\s+([A-Za-z0-9_$]+)/);
+    if (dbMatch) {
+      const name = dbMatch[1];
+      const id = `table-${name}`;
+      const existing = tables.find(t => t.name === name);
+      if (!existing) {
+        tables.push({
+          id,
+          name,
+          columns: [],
+        });
+        stack.push({indent, type: 'db', id, name});
+      } else {
+        diagnostics.push({
+          line: lineNum,
+          message: `Duplicate table declaration "${name}"`,
+          severity: 'warning',
+        });
+      }
+      continue;
+    }
+
+    // 4. API Route Declaration: api <Path>
+    const apiMatch = trimmed.match(/^api\s+(\S+)/);
+    if (apiMatch) {
+      const path = apiMatch[1];
+      const id = `api-${path.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const existing = apiRoutes.find(r => r.path === path);
+      if (!existing) {
+        apiRoutes.push({
+          id,
+          path,
+          endpoints: [],
+        });
+        stack.push({indent, type: 'api', id, name: path});
+      } else {
+        diagnostics.push({
+          line: lineNum,
+          message: `Duplicate API route "${path}"`,
+          severity: 'warning',
+        });
+      }
+      continue;
+    }
+
+    // 5. State Slice Declaration: state <SliceName>
+    const stateMatch = trimmed.match(/^state\s+([A-Za-z0-9_$]+)/);
+    if (stateMatch) {
+      const name = stateMatch[1];
+      const id = `state-${name}`;
+      const existing = states.find(s => s.name === name);
+      if (!existing) {
+        states.push({
+          id,
+          name,
+          fields: [],
+        });
+        stack.push({indent, type: 'state', id, name});
+      } else {
+        diagnostics.push({
+          line: lineNum,
+          message: `Duplicate state slice "${name}"`,
+          severity: 'warning',
+        });
+      }
+      continue;
+    }
+
+    // 6. Standalone Event Declaration: event <Name>(<payload>) -> Target.method
+    const eventMatch = trimmed.match(
+      /^event\s+([A-Za-z0-9_$]+)(\((.*?)\))?(\s*->\s*(.+))?/
+    );
+    if (eventMatch) {
+      const name = eventMatch[1];
+      const payloadType = eventMatch[3] ? eventMatch[3].trim() : undefined;
+      const targetStr = eventMatch[5] ? eventMatch[5].trim() : undefined;
+      const id = `event-${name}`;
+
+      const targets: Array<{targetClass: string; targetMethod: string}> = [];
+      if (targetStr) {
+        const dotIdx = targetStr.indexOf('.');
+        const targetClass =
+          dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
+        const targetMethod =
+          dotIdx !== -1 ? targetStr.slice(dotIdx + 1).trim() : 'handle';
+        targets.push({targetClass, targetMethod});
+
+        connections.push({
+          id: `edge-${id}-emits->${targetClass}.${targetMethod}`,
+          sourceId: id,
+          targetId: `entity-${targetClass}`,
+          targetMember: targetMethod,
+          type: 'emits',
+        });
+      }
+
+      events.push({
+        id,
+        name,
+        payloadType,
+        targets,
+      });
+      continue;
+    }
+
+    // 7. UI-to-Logic binding: binds <LogicEntity>
     const bindsMatch = trimmed.match(/^binds\s+([A-Za-z0-9_$]+)/);
     if (bindsMatch) {
       if (parent && parent.type === 'ui') {
@@ -176,7 +293,125 @@ export function parseOutline(text: string): ParseResult {
       continue;
     }
 
-    // Check member declaration (+, -, #) under class/type
+    // 8. Members under Database Table
+    if (parent && parent.type === 'db') {
+      const currentTable = tables.find(t => t.id === parent.id);
+      if (currentTable) {
+        const colMatch = trimmed.match(
+          /^[+\-#]?\s*([A-Za-z0-9_$]+)\s*:\s*(.+)$/
+        );
+        if (colMatch) {
+          const colName = colMatch[1];
+          const colRest = colMatch[2].trim();
+
+          const isPrimary = /\bpk\b/i.test(colRest);
+          const isUnique = /\bunique\b/i.test(colRest) || isPrimary;
+          const isForeignKey = /\bfk\b/i.test(colRest);
+
+          let cleanType = colRest.replace(/\b(pk|unique|fk)\b/gi, '').trim();
+          let references: {table: string; column: string} | undefined;
+
+          // Check for foreign key arrow: -> OtherTable.col
+          const fkArrow = cleanType.indexOf('->');
+          if (fkArrow !== -1) {
+            const refTarget = cleanType.slice(fkArrow + 2).trim();
+            cleanType = cleanType.slice(0, fkArrow).trim();
+            const dot = refTarget.indexOf('.');
+            if (dot !== -1) {
+              const refTable = refTarget.slice(0, dot).trim();
+              const refCol = refTarget.slice(dot + 1).trim();
+              references = {table: refTable, column: refCol};
+              connections.push({
+                id: `edge-${parent.id}-${colName}->${refTable}.${refCol}`,
+                sourceId: parent.id,
+                sourceMember: colName,
+                targetId: `table-${refTable}`,
+                targetMember: refCol,
+                type: 'foreignKey',
+              });
+            }
+          }
+
+          const colDef: ColumnDefinition = {
+            name: colName,
+            type: cleanType || 'text',
+            isPrimary,
+            isUnique,
+            isForeignKey: isForeignKey || !!references,
+            references,
+          };
+          currentTable.columns.push(colDef);
+          continue;
+        }
+      }
+    }
+
+    // 9. Members under API Route: e.g. + GET /login(req: DTO): Resp -> Service.method
+    if (parent && parent.type === 'api') {
+      const currentRoute = apiRoutes.find(r => r.id === parent.id);
+      if (currentRoute) {
+        const epMatch = trimmed.match(
+          /^[+\-#]?\s*(GET|POST|PUT|PATCH|DELETE)\s+(\S+?)(\((.*?)\))?(\s*:\s*([^->\s]+))?(\s*->\s*(.+))?$/i
+        );
+        if (epMatch) {
+          const method = epMatch[1].toUpperCase() as HttpMethod;
+          const epPath = epMatch[2];
+          const requestType = epMatch[4] ? epMatch[4].trim() : undefined;
+          const responseType = epMatch[6] ? epMatch[6].trim() : undefined;
+          const targetStr = epMatch[8] ? epMatch[8].trim() : undefined;
+
+          let targetHandler:
+            | {targetClass: string; targetMethod: string}
+            | undefined;
+          if (targetStr) {
+            const dotIdx = targetStr.indexOf('.');
+            const targetClass =
+              dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
+            const targetMethod =
+              dotIdx !== -1 ? targetStr.slice(dotIdx + 1).trim() : 'handle';
+            targetHandler = {targetClass, targetMethod};
+
+            connections.push({
+              id: `edge-${parent.id}-${method}-${epPath}->${targetClass}.${targetMethod}`,
+              sourceId: parent.id,
+              sourceMember: `${method} ${epPath}`,
+              targetId: `entity-${targetClass}`,
+              targetMember: targetMethod,
+              type: 'invokes',
+            });
+          }
+
+          const endpoint: ApiEndpoint = {
+            method,
+            name: epPath,
+            requestType,
+            responseType,
+            targetHandler,
+          };
+          currentRoute.endpoints.push(endpoint);
+          continue;
+        }
+      }
+    }
+
+    // 10. Members under State Slice: + field: type
+    if (parent && parent.type === 'state') {
+      const currentState = states.find(s => s.id === parent.id);
+      if (currentState) {
+        const fieldMatch = trimmed.match(
+          /^[+\-#]?\s*([A-Za-z0-9_$]+)\s*:\s*(.+)$/
+        );
+        if (fieldMatch) {
+          currentState.fields.push({
+            name: fieldMatch[1],
+            type: fieldMatch[2].trim(),
+          });
+          continue;
+        }
+      }
+    }
+
+    // 11. Members under Class / Type
     if (parent && parent.type === 'class') {
       const currentClass = classes.find(c => c.id === parent.id);
       if (!currentClass) continue;
@@ -186,7 +421,6 @@ export function parseOutline(text: string): ParseResult {
         const visibility = parseVisibility(memberMatch[1]);
         const memberContent = memberMatch[2].trim();
 
-        // Check if there is an inline call: -> Target.method
         let inlineCall: {targetClass: string; targetMethod: string} | null =
           null;
         let mainContent = memberContent;
@@ -210,7 +444,6 @@ export function parseOutline(text: string): ParseResult {
           }
         }
 
-        // Check if method: methodName(args): returnType
         const methodMatch = mainContent.match(
           /^([A-Za-z0-9_$]+)\s*\((.*?)\)(\s*:\s*(.*))?$/
         );
@@ -242,7 +475,6 @@ export function parseOutline(text: string): ParseResult {
           continue;
         }
 
-        // Check if property: propName: type
         const propMatch = mainContent.match(/^([A-Za-z0-9_$]+)\s*:\s*(.+)$/);
         if (propMatch) {
           const propName = propMatch[1];
@@ -257,7 +489,6 @@ export function parseOutline(text: string): ParseResult {
           continue;
         }
 
-        // Malformed member
         diagnostics.push({
           line: lineNum,
           message: `Malformed member definition "${trimmed}". Expected "prop: type" or "method(params): returnType"`,
@@ -267,7 +498,6 @@ export function parseOutline(text: string): ParseResult {
       }
     }
 
-    // If not matched
     diagnostics.push({
       line: lineNum,
       message: `Unrecognized statement "${trimmed}"`,
@@ -275,5 +505,14 @@ export function parseOutline(text: string): ParseResult {
     });
   }
 
-  return {classes, uiComponents, connections, diagnostics};
+  return {
+    classes,
+    uiComponents,
+    tables,
+    apiRoutes,
+    events,
+    states,
+    connections,
+    diagnostics,
+  };
 }
