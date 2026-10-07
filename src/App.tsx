@@ -409,6 +409,7 @@ export const AppContent: React.FC = () => {
             onNodeDragStop={handleNodeDragStop}
             onSelectEntity={setSelectedEntityId}
             onUpdateEntityText={handleUpdateEntityText}
+            onInsertSnippet={handleInsertSnippet}
             selectedEntityId={selectedEntityId}
           />
         </div>

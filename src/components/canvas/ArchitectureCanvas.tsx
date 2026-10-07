@@ -15,7 +15,16 @@ import {
   type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {Maximize2, Focus} from 'lucide-react';
+import {
+  Maximize2,
+  Focus,
+  Box,
+  Database,
+  Globe,
+  Zap,
+  Layout,
+  Layers,
+} from 'lucide-react';
 import {ClassNode} from './nodes/ClassNode';
 import {UINode} from './nodes/UINode';
 import {TableNode} from './nodes/TableNode';
@@ -44,7 +53,15 @@ interface ArchitectureCanvasProps {
   onNodeDragStop?: (id: string, position: {x: number; y: number}) => void;
   onSelectEntity?: (entityId: string | null) => void;
   onUpdateEntityText?: (entityName: string, newSnippet: string) => void;
+  onInsertSnippet?: (snippet: string) => void;
   selectedEntityId?: string | null;
+}
+
+interface ContextMenuState {
+  x: number;
+  y: number;
+  flowX?: number;
+  flowY?: number;
 }
 
 const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
@@ -53,14 +70,16 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
   onNodeDragStop,
   onSelectEntity,
   onUpdateEntityText,
+  onInsertSnippet,
   selectedEntityId,
 }) => {
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   // Multi-select active filters (empty or including 'all' means all enabled)
   const [activeFilters, setActiveFilters] = useState<Set<DomainType>>(
     new Set<DomainType>(['logic', 'ui', 'database', 'api', 'event', 'state'])
   );
   const [isAllSelected, setIsAllSelected] = useState(true);
-  const {fitView, setCenter} = useReactFlow();
+  const {fitView, setCenter, screenToFlowPosition} = useReactFlow();
 
   const isDomainVisible = useCallback(
     (domain: DomainType) => {
@@ -422,10 +441,25 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
         onNodeClick={(_, node) => {
+          setContextMenu(null);
           if (onSelectEntity) onSelectEntity(node.id);
         }}
         onPaneClick={() => {
+          setContextMenu(null);
           if (onSelectEntity) onSelectEntity(null);
+        }}
+        onPaneContextMenu={e => {
+          e.preventDefault();
+          const flowPos = screenToFlowPosition({
+            x: e.clientX,
+            y: e.clientY,
+          });
+          setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            flowX: Math.round(flowPos.x),
+            flowY: Math.round(flowPos.y),
+          });
         }}
         onNodeDragStop={(_, node) => {
           if (onNodeDragStop) {
@@ -451,6 +485,136 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
           maskColor="rgba(0, 0, 0, 0.4)"
         />
       </ReactFlow>
+
+      {/* Right-Click Context Menu */}
+      {contextMenu && (
+        <div
+          style={{
+            top: Math.min(contextMenu.y, window.innerHeight - 260),
+            left: Math.min(contextMenu.x, window.innerWidth - 220),
+          }}
+          className="fixed z-50 min-w-[200px] rounded-lg border border-border bg-popover/95 backdrop-blur-md p-1.5 shadow-xl text-popover-foreground text-xs animate-in fade-in zoom-in-95 duration-100"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/50 mb-1">
+            Insert Entity
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const name = `Service_${Date.now().toString().slice(-4)}`;
+              onInsertSnippet?.(`\nclass ${name}\n  + execute(): void\n`);
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+          >
+            <Box className="h-3.5 w-3.5 text-purple-500" />
+            <div className="flex flex-col">
+              <span className="font-medium">Class / Service</span>
+              <span className="text-[10px] text-muted-foreground">
+                Logic & methods
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const name = `Table_${Date.now().toString().slice(-4)}`;
+              onInsertSnippet?.(
+                `\ndb ${name}\n  + id: uuid pk\n  + name: string\n`
+              );
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+          >
+            <Database className="h-3.5 w-3.5 text-emerald-500" />
+            <div className="flex flex-col">
+              <span className="font-medium">Database Table</span>
+              <span className="text-[10px] text-muted-foreground">
+                Columns, PK, FK
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const route = `/resource_${Date.now().toString().slice(-4)}`;
+              onInsertSnippet?.(
+                `\napi /api/v1${route}\n  + GET /list(): Item[]\n`
+              );
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+          >
+            <Globe className="h-3.5 w-3.5 text-amber-500" />
+            <div className="flex flex-col">
+              <span className="font-medium">REST API Route</span>
+              <span className="text-[10px] text-muted-foreground">
+                Endpoints & handlers
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const name = `View_${Date.now().toString().slice(-4)}`;
+              onInsertSnippet?.(`\nui ${name}\n  ui Content\n`);
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+          >
+            <Layout className="h-3.5 w-3.5 text-sky-500" />
+            <div className="flex flex-col">
+              <span className="font-medium">UI Component</span>
+              <span className="text-[10px] text-muted-foreground">
+                DOM hierarchy & binds
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const name = `Event_${Date.now().toString().slice(-4)}`;
+              onInsertSnippet?.(`\nevent ${name}(Payload)\n`);
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+          >
+            <Zap className="h-3.5 w-3.5 text-violet-500" />
+            <div className="flex flex-col">
+              <span className="font-medium">Event Stream</span>
+              <span className="text-[10px] text-muted-foreground">
+                Pub/sub messaging
+              </span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const name = `State_${Date.now().toString().slice(-4)}`;
+              onInsertSnippet?.(
+                `\nstate ${name}\n  + data: Record<string, any>\n`
+              );
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground text-left transition-colors"
+          >
+            <Layers className="h-3.5 w-3.5 text-cyan-500" />
+            <div className="flex flex-col">
+              <span className="font-medium">State Slice</span>
+              <span className="text-[10px] text-muted-foreground">
+                Client state store
+              </span>
+            </div>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
