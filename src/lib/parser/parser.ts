@@ -74,9 +74,10 @@ export function parseOutline(text: string): ParseResult {
 
   interface StackItem {
     indent: number;
-    type: 'class' | 'ui' | 'db' | 'api' | 'state';
+    type: 'class' | 'method' | 'ui' | 'db' | 'api' | 'state';
     id: string;
     name: string;
+    parentClassId?: string;
   }
 
   const stack: StackItem[] = [];
@@ -461,6 +462,13 @@ export function parseOutline(text: string): ParseResult {
             calls: inlineCall ? [inlineCall] : [],
           };
           currentClass.methods.push(methodSignature);
+          stack.push({
+            indent,
+            type: 'method',
+            id: `${parent.id}-${methodName}`,
+            name: methodName,
+            parentClassId: parent.id,
+          });
 
           if (inlineCall) {
             connections.push({
@@ -495,6 +503,49 @@ export function parseOutline(text: string): ParseResult {
           severity: 'warning',
         });
         continue;
+      }
+    }
+
+    // 12. Invocations under Method: -> Target.method, calls Target.method, or - Target.method / + Target.method
+    if (parent && parent.type === 'method') {
+      const parentClass = classes.find(c => c.id === parent.parentClassId);
+      const parentMethod = parentClass?.methods.find(
+        m => m.name === parent.name
+      );
+
+      if (parentClass && parentMethod) {
+        // Strip leading symbols: '->', 'calls', '-', '+', '*'
+        let targetStr = trimmed;
+        if (targetStr.startsWith('->')) {
+          targetStr = targetStr.slice(2).trim();
+        } else if (/^(calls|invokes)\b/i.test(targetStr)) {
+          targetStr = targetStr.replace(/^(calls|invokes)\b/i, '').trim();
+        } else if (/^[+\-*]\s*(->)?\s*/.test(targetStr)) {
+          targetStr = targetStr.replace(/^[+\-*]\s*(->)?\s*/, '').trim();
+        }
+
+        if (targetStr) {
+          const dotIdx = targetStr.indexOf('.');
+          const targetClass =
+            dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
+          const targetMethod =
+            dotIdx !== -1 ? targetStr.slice(dotIdx + 1).trim() : 'default';
+
+          if (!parentMethod.calls) {
+            parentMethod.calls = [];
+          }
+          parentMethod.calls.push({targetClass, targetMethod});
+
+          connections.push({
+            id: `edge-${parentClass.id}-${parentMethod.name}->${targetClass}.${targetMethod}`,
+            sourceId: parentClass.id,
+            sourceMember: parentMethod.name,
+            targetId: `entity-${targetClass}`,
+            targetMember: targetMethod,
+            type: 'invokes',
+          });
+          continue;
+        }
       }
     }
 

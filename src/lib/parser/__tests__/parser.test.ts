@@ -19,6 +19,71 @@ class AuthService
     expect(auth.methods).toHaveLength(2);
   });
 
+  it('parses member dot path return types like Pi.help', () => {
+    const text = `
+class MainService
+  + start(): Pi.help
+  + hi(a: string): string
+
+ui App
+  binds MainService
+
+class Pi
+  + help: string
+`;
+    const result = parseOutline(text);
+    const main = result.classes.find(c => c.name === 'MainService');
+    expect(main).toBeDefined();
+    const startMethod = main?.methods.find(m => m.name === 'start');
+    expect(startMethod?.returnType).toBe('Pi.help');
+  });
+
+  it('parses sub-bullet method invocations cleanly separated from return values', () => {
+    const text = `
+class MainService
+  + start(): Pi.help
+    -> Pi.help
+    calls OtherService.run
+  + process(): boolean
+    - Logger.log
+
+class Pi
+  + help: string
+
+class OtherService
+  + run(): void
+
+class Logger
+  + log(): void
+`;
+    const result = parseOutline(text);
+    const main = result.classes.find(c => c.name === 'MainService');
+    expect(main).toBeDefined();
+    const start = main?.methods.find(m => m.name === 'start');
+    expect(start?.returnType).toBe('Pi.help');
+    expect(start?.calls).toHaveLength(2);
+    expect(start?.calls?.[0]).toEqual({
+      targetClass: 'Pi',
+      targetMethod: 'help',
+    });
+    expect(start?.calls?.[1]).toEqual({
+      targetClass: 'OtherService',
+      targetMethod: 'run',
+    });
+
+    const processMethod = main?.methods.find(m => m.name === 'process');
+    expect(processMethod?.calls).toHaveLength(1);
+    expect(processMethod?.calls?.[0]).toEqual({
+      targetClass: 'Logger',
+      targetMethod: 'log',
+    });
+
+    expect(result.connections.some(c => c.targetId === 'entity-Pi')).toBe(true);
+    expect(
+      result.connections.some(c => c.targetId === 'entity-OtherService')
+    ).toBe(true);
+  });
+
   it('parses database tables and foreign keys', () => {
     const text = `
 db Users
