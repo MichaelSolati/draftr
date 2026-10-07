@@ -84,4 +84,33 @@ ui OrderView
     ).toBe(true);
     expect(issues.some(i => i.title === 'Unreferenced Entity')).toBe(true);
   });
+
+  it('recognizes entities referenced in method return types or parameters', () => {
+    const text = `
+class MainService
+  + start(): Pi.help
+  + hi(): string
+
+ui App
+  binds MainService
+
+class Pi
+  + help: string
+`;
+    const parsed = parseOutline(text);
+    const project = {
+      id: 'proj',
+      name: 'Referenced Type Project',
+      rawOutlineText: text,
+      classes: parsed.classes,
+      uiComponents: parsed.uiComponents,
+      connections: parsed.connections,
+      updatedAt: Date.now(),
+      createdAt: Date.now(),
+    };
+    const issues = lintArchitecture(project);
+    // Pi should NOT be flagged as unreferenced because start() returns Pi.help
+    const unreferencedPi = issues.find(i => i.id === 'unreferenced-service-Pi');
+    expect(unreferencedPi).toBeUndefined();
+  });
 });

@@ -118,8 +118,29 @@ export function lintArchitecture(
   // 5. Unreferenced / Dead Service Check
   const targetedClasses = new Set<string>();
   for (const cls of project.classes) {
+    for (const p of cls.properties || []) {
+      const cleanType = p.type.replace(/[[\]<>?,]/g, ' ').trim();
+      cleanType.split(/\s+/).forEach(token => {
+        const root = token.split('.')[0];
+        if (root) targetedClasses.add(root);
+      });
+    }
     for (const m of cls.methods) {
       m.calls?.forEach(c => targetedClasses.add(c.targetClass));
+      // Extract referenced types from returnType (e.g. Pi.help -> Pi, Promise<Pi> -> Pi)
+      const cleanRet = m.returnType.replace(/[[\]<>?,]/g, ' ').trim();
+      cleanRet.split(/\s+/).forEach(token => {
+        const root = token.split('.')[0];
+        if (root) targetedClasses.add(root);
+      });
+      // Extract referenced types from parameters
+      m.parameters?.forEach(param => {
+        const cleanParamType = param.type.replace(/[[\]<>?,]/g, ' ').trim();
+        cleanParamType.split(/\s+/).forEach(token => {
+          const root = token.split('.')[0];
+          if (root) targetedClasses.add(root);
+        });
+      });
     }
   }
   for (const ui of project.uiComponents) {
@@ -128,11 +149,35 @@ export function lintArchitecture(
   (project.apiRoutes || []).forEach(r =>
     r.endpoints.forEach(e => {
       if (e.targetHandler) targetedClasses.add(e.targetHandler.targetClass);
+      if (e.requestType) {
+        const root = e.requestType
+          .replace(/[[\]<>?,]/g, ' ')
+          .trim()
+          .split(/\s+/)[0]
+          ?.split('.')[0];
+        if (root) targetedClasses.add(root);
+      }
+      if (e.responseType) {
+        const root = e.responseType
+          .replace(/[[\]<>?,]/g, ' ')
+          .trim()
+          .split(/\s+/)[0]
+          ?.split('.')[0];
+        if (root) targetedClasses.add(root);
+      }
     })
   );
-  (project.events || []).forEach(e =>
-    e.targets.forEach(t => targetedClasses.add(t.targetClass))
-  );
+  (project.events || []).forEach(e => {
+    e.targets.forEach(t => targetedClasses.add(t.targetClass));
+    if (e.payloadType) {
+      const root = e.payloadType
+        .replace(/[[\]<>?,]/g, ' ')
+        .trim()
+        .split(/\s+/)[0]
+        ?.split('.')[0];
+      if (root) targetedClasses.add(root);
+    }
+  });
 
   for (const cls of project.classes) {
     if (project.classes.length > 1 && !targetedClasses.has(cls.name)) {
@@ -140,7 +185,7 @@ export function lintArchitecture(
         id: `unreferenced-service-${cls.name}`,
         severity: 'info',
         title: 'Unreferenced Entity',
-        description: `Entity "${cls.name}" is not invoked by any UI component, API route, or service.`,
+        description: `Entity "${cls.name}" is not invoked or referenced by any UI component, API route, or service.`,
         affectedEntityId: cls.id,
       });
     }
