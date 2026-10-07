@@ -5,10 +5,12 @@ import {QuickTextEditor} from './components/editor/QuickTextEditor';
 import {ArchitectureCanvas} from './components/canvas/ArchitectureCanvas';
 import {ExportModal} from './components/export/ExportModal';
 import {ImportModal} from './components/import/ImportModal';
+import {ScaffoldModal} from './components/scaffold/ScaffoldModal';
 import {ClaudeHandoffModal} from './components/agent/ClaudeHandoffModal';
 import {ProjectModal} from './components/workspace/ProjectModal';
 import {CommandPalette} from './components/palette/CommandPalette';
 import {parseOutline} from './lib/parser/parser';
+import {lintArchitecture} from './lib/linter/rules';
 import {
   getProject,
   saveProject,
@@ -76,6 +78,7 @@ export const AppContent: React.FC = () => {
 
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isScaffoldOpen, setIsScaffoldOpen] = useState(false);
   const [isClaudeOpen, setIsClaudeOpen] = useState(false);
   const [isProjectOpen, setIsProjectOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
@@ -175,6 +178,11 @@ export const AppContent: React.FC = () => {
       updatedAt: Date.now(),
     };
   }, [project, parseResult, nodePositions]);
+
+  // Lint project architecture
+  const architectureIssues = useMemo(() => {
+    return lintArchitecture(currentProjectWithPositions);
+  }, [currentProjectWithPositions]);
 
   // Debounced autosave
   const triggerAutosave = useCallback((updatedProject: ArchitectureProject) => {
@@ -291,6 +299,19 @@ export const AppContent: React.FC = () => {
     setSelectedEntityId(null);
   };
 
+  // Combine parser diagnostics with architectural lint warnings
+  const combinedDiagnostics = useMemo(() => {
+    const diags = [...parseResult.diagnostics];
+    architectureIssues.forEach(issue => {
+      diags.push({
+        line: 1,
+        message: `[Architecture Rule] ${issue.title}: ${issue.description}`,
+        severity: issue.severity,
+      });
+    });
+    return diags;
+  }, [parseResult.diagnostics, architectureIssues]);
+
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground overflow-hidden">
       <TopNav
@@ -298,6 +319,7 @@ export const AppContent: React.FC = () => {
         onOpenProjectModal={() => setIsProjectOpen(true)}
         onOpenExportModal={() => setIsExportOpen(true)}
         onOpenImportModal={() => setIsImportOpen(true)}
+        onOpenScaffoldModal={() => setIsScaffoldOpen(true)}
         onOpenClaudeModal={() => setIsClaudeOpen(true)}
         onOpenPalette={() => setIsPaletteOpen(true)}
       />
@@ -308,7 +330,7 @@ export const AppContent: React.FC = () => {
           <QuickTextEditor
             value={project.rawOutlineText}
             onChange={handleTextChange}
-            diagnostics={parseResult.diagnostics}
+            diagnostics={combinedDiagnostics}
             onInsertSnippet={handleInsertSnippet}
             highlightedEntity={selectedEntityId}
             entityCount={{
@@ -342,6 +364,12 @@ export const AppContent: React.FC = () => {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         onImport={handleImportCode}
+      />
+
+      <ScaffoldModal
+        project={currentProjectWithPositions}
+        isOpen={isScaffoldOpen}
+        onClose={() => setIsScaffoldOpen(false)}
       />
 
       <ClaudeHandoffModal

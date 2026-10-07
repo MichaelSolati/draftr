@@ -7,6 +7,7 @@ import {
   FolderGit2,
   ChevronDown,
   Command,
+  Code2,
 } from 'lucide-react';
 import {ThemeToggle} from '../theme/ThemeToggle';
 
@@ -15,6 +16,7 @@ interface TopNavProps {
   onOpenProjectModal: () => void;
   onOpenExportModal: () => void;
   onOpenImportModal: () => void;
+  onOpenScaffoldModal: () => void;
   onOpenClaudeModal: () => void;
   onOpenPalette: () => void;
 }
@@ -24,6 +26,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenProjectModal,
   onOpenExportModal,
   onOpenImportModal,
+  onOpenScaffoldModal,
   onOpenClaudeModal,
   onOpenPalette,
 }) => {
@@ -74,6 +77,15 @@ export const TopNav: React.FC<TopNavProps> = ({
         >
           <FileInput className="h-3.5 w-3.5 text-muted-foreground" />
           <span>Import</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenScaffoldModal}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
+        >
+          <Code2 className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Scaffold Code</span>
         </button>
 
         <button

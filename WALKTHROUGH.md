@@ -55,14 +55,44 @@ We have built, verified, and committed **Phase 1 (Core Dual-Engine Architecture)
 
 ---
 
+## 🚀 Phase 3: Editor UX & Palette
+- **Command Palette (`CommandPalette.tsx`)**: Global `Cmd+K` / `Ctrl+K` command search for adding templates (Service, UI hierarchy, Database schema, REST Route, Event Pub/Sub, State Slice), jumping between views, and running exporters.
+- **Snippet Bar**: Quick one-click insertion toolbar above the code editor.
+- **Bidirectional Cross-View Highlighting**: Clicking any node or entity on the visual canvas instantly highlights and scrolls to its corresponding line numbers in the outline editor.
+
+---
+
+## 📥 Phase 4: Reverse-Engineering Codebase Importers
+- **TypeScript Extractor (`src/lib/importers/typescript.ts`)**: Scans TypeScript code, classes, methods, and React component hierarchies to reconstruct spec outlines.
+- **SQL DDL & Prisma Parser (`src/lib/importers/sql.ts`)**: Converts `CREATE TABLE` statements (with `PRIMARY KEY`, `FOREIGN KEY ... REFERENCES`, `UNIQUE`) or Prisma schemas into `db <Table>` specifications.
+- **Import Modal (`ImportModal.tsx`)**: Interactive modal supporting pasting code/DDL with Append or Replace modes.
+
+---
+
+## 🔍 Phase 5 & 6: Architectural Rule Linter & Codebase Scaffolder
+- **Architecture Rule Linter (`src/lib/linter/rules.ts`)**:
+  - Unresolved Call Targets: Detects service calls targeting nonexistent entities.
+  - Foreign Key Integrity: Validates foreign key references point to declared database tables.
+  - Cycle Detector: Uses DFS cycle detection to detect circular dependency chains.
+  - Layer Boundary Violations: Warns if UI components bind directly to database models without service abstraction.
+  - Dead / Unreferenced Services: Detects unused services.
+- **Codebase Scaffolder (`src/lib/generator/scaffolder.ts` & `ScaffoldModal.tsx`)**:
+  - Generates TypeScript service classes with method stubs and dependency injections.
+  - Generates React UI component files with typed props and child/service wiring.
+  - Generates Prisma schema (`prisma/schema.prisma`) with primary keys, unique constraints, and scalar types.
+  - Generates Express REST API router (`src/routes/api.ts`) with typed endpoints.
+  - Includes interactive file tree and code preview modal with one-click download/copy.
+
+---
+
 ## 🧪 Validation & Test Results
 
 | Command | Status | Output / Results |
 |---------|--------|------------------|
 | `npm run lint` | Passed | `tsc --noEmit` and `gts lint` completed with 0 errors |
-| `npm run dupes` | Passed | 0 duplicate clones found across 30 source files (0.00% duplication) |
-| `npm run test` | Passed | 8 / 8 unit tests passed |
-| `npm run coverage` | Passed | 90.54% statement coverage across all testable libraries |
-| `npm run build` | Passed | Production bundle built in 572ms |
+| `npm run dupes` | Passed | 0 duplicate clones found across 40 source files (0.00% duplication) |
+| `npm run test` | Passed | 16 / 16 unit tests passed |
+| `npm run coverage` | Passed | 92.68% statement coverage across all testable libraries |
+| `npm run build` | Passed | Production bundle built cleanly |
 | `git commit` | Passed | Pre-commit gate sequentially verified all 4 stages |
-| `graphify` | Updated | Knowledge graph expanded to 233 nodes, 407 edges, 18 communities |
+
