@@ -37,12 +37,16 @@ interface ArchitectureCanvasProps {
     targetMember: string | null
   ) => void;
   onNodeDragStop?: (id: string, position: {x: number; y: number}) => void;
+  onSelectEntity?: (entityId: string | null) => void;
+  selectedEntityId?: string | null;
 }
 
 export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   project,
   onConnectWire,
   onNodeDragStop,
+  onSelectEntity,
+  selectedEntityId,
 }) => {
   const [activeFilter, setActiveFilter] = useState<DomainType | 'all'>('all');
 
@@ -62,6 +66,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           type: 'classNode',
           position: cls.position || defaultPos,
           data: cls as unknown as Record<string, unknown>,
+          selected: selectedEntityId === cls.id,
         });
       });
     }
@@ -78,6 +83,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           type: 'uiNode',
           position: ui.position || defaultPos,
           data: ui as unknown as Record<string, unknown>,
+          selected: selectedEntityId === ui.id,
         });
       });
     }
@@ -94,6 +100,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           type: 'tableNode',
           position: tbl.position || defaultPos,
           data: tbl as unknown as Record<string, unknown>,
+          selected: selectedEntityId === tbl.id,
         });
       });
     }
@@ -110,6 +117,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           type: 'apiNode',
           position: api.position || defaultPos,
           data: api as unknown as Record<string, unknown>,
+          selected: selectedEntityId === api.id,
         });
       });
     }
@@ -126,6 +134,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           type: 'eventNode',
           position: ev.position || defaultPos,
           data: ev as unknown as Record<string, unknown>,
+          selected: selectedEntityId === ev.id,
         });
       });
     }
@@ -142,6 +151,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           type: 'stateNode',
           position: st.position || defaultPos,
           data: st as unknown as Record<string, unknown>,
+          selected: selectedEntityId === st.id,
         });
       });
     }
@@ -155,6 +165,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
     project.events,
     project.states,
     activeFilter,
+    selectedEntityId,
   ]);
 
   // Convert project connections to React Flow Edges
@@ -275,6 +286,12 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
         edges={edges}
         nodeTypes={nodeTypes}
         onConnect={handleConnect}
+        onNodeClick={(_, node) => {
+          if (onSelectEntity) onSelectEntity(node.id);
+        }}
+        onPaneClick={() => {
+          if (onSelectEntity) onSelectEntity(null);
+        }}
         onNodeDragStop={(_, node) => {
           if (onNodeDragStop) {
             onNodeDragStop(node.id, node.position);

@@ -1,5 +1,12 @@
 import React from 'react';
-import {Layers, FileCode, Send, FolderGit2, ChevronDown} from 'lucide-react';
+import {
+  Layers,
+  FileCode,
+  Send,
+  FolderGit2,
+  ChevronDown,
+  Command,
+} from 'lucide-react';
 import {ThemeToggle} from '../theme/ThemeToggle';
 
 interface TopNavProps {
@@ -7,6 +14,7 @@ interface TopNavProps {
   onOpenProjectModal: () => void;
   onOpenExportModal: () => void;
   onOpenClaudeModal: () => void;
+  onOpenPalette: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -14,6 +22,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenProjectModal,
   onOpenExportModal,
   onOpenClaudeModal,
+  onOpenPalette,
 }) => {
   return (
     <header className="h-12 border-b border-border bg-card text-card-foreground px-4 flex items-center justify-between shrink-0 select-none z-30">
@@ -37,6 +46,19 @@ export const TopNav: React.FC<TopNavProps> = ({
           <FolderGit2 className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="max-w-[160px] truncate">{projectName}</span>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </button>
+
+        {/* Quick Command Palette Button */}
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-muted-foreground border border-border bg-muted/30 hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <Command className="h-3 w-3" />
+          <span>Quick Actions</span>
+          <kbd className="px-1 py-0.2 text-[9px] bg-background border border-border rounded">
+            ⌘K
+          </kbd>
         </button>
       </div>
 

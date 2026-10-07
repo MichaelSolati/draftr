@@ -6,6 +6,7 @@ import {ArchitectureCanvas} from './components/canvas/ArchitectureCanvas';
 import {ExportModal} from './components/export/ExportModal';
 import {ClaudeHandoffModal} from './components/agent/ClaudeHandoffModal';
 import {ProjectModal} from './components/workspace/ProjectModal';
+import {CommandPalette} from './components/palette/CommandPalette';
 import {parseOutline} from './lib/parser/parser';
 import {
   getProject,
@@ -75,11 +76,25 @@ export const AppContent: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isClaudeOpen, setIsClaudeOpen] = useState(false);
   const [isProjectOpen, setIsProjectOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [nodePositions, setNodePositions] = useState<
     Record<string, {x: number; y: number}>
   >({});
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Global keydown for Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Load project on mount
   useEffect(() => {
@@ -175,6 +190,16 @@ export const AppContent: React.FC = () => {
     });
   };
 
+  const handleInsertSnippet = (snippet: string) => {
+    setProject(prev => {
+      const trimmed = prev.rawOutlineText.trimEnd();
+      const nextText = `${trimmed}\n${snippet}`;
+      const next = {...prev, rawOutlineText: nextText, updatedAt: Date.now()};
+      triggerAutosave(next);
+      return next;
+    });
+  };
+
   const handleNodeDragStop = (id: string, position: {x: number; y: number}) => {
     setNodePositions(prev => ({...prev, [id]: position}));
   };
@@ -224,6 +249,7 @@ export const AppContent: React.FC = () => {
       await setActiveProjectId(id);
       setProject(loaded);
       setNodePositions({});
+      setSelectedEntityId(null);
     }
   };
 
@@ -248,6 +274,7 @@ export const AppContent: React.FC = () => {
     await setActiveProjectId(id);
     setProject(newProj);
     setNodePositions({});
+    setSelectedEntityId(null);
   };
 
   return (
@@ -257,15 +284,18 @@ export const AppContent: React.FC = () => {
         onOpenProjectModal={() => setIsProjectOpen(true)}
         onOpenExportModal={() => setIsExportOpen(true)}
         onOpenClaudeModal={() => setIsClaudeOpen(true)}
+        onOpenPalette={() => setIsPaletteOpen(true)}
       />
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Quick-Text Editor (40% width) */}
+        {/* Left: Quick-Text Editor (42% width) */}
         <div className="w-[42%] min-w-[320px] max-w-[600px] h-full shrink-0">
           <QuickTextEditor
             value={project.rawOutlineText}
             onChange={handleTextChange}
             diagnostics={parseResult.diagnostics}
+            onInsertSnippet={handleInsertSnippet}
+            highlightedEntity={selectedEntityId}
             entityCount={{
               classes: parseResult.classes.length,
               ui: parseResult.uiComponents.length,
@@ -280,11 +310,13 @@ export const AppContent: React.FC = () => {
             project={currentProjectWithPositions}
             onConnectWire={handleConnectWire}
             onNodeDragStop={handleNodeDragStop}
+            onSelectEntity={setSelectedEntityId}
+            selectedEntityId={selectedEntityId}
           />
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals & Command Palette */}
       <ExportModal
         project={currentProjectWithPositions}
         isOpen={isExportOpen}
@@ -303,6 +335,15 @@ export const AppContent: React.FC = () => {
         onClose={() => setIsProjectOpen(false)}
         onSelectProject={handleSelectProject}
         onCreateProject={handleCreateProject}
+      />
+
+      <CommandPalette
+        isOpen={isPaletteOpen}
+        onClose={() => setIsPaletteOpen(false)}
+        onInsertSnippet={handleInsertSnippet}
+        onOpenExport={() => setIsExportOpen(true)}
+        onOpenClaude={() => setIsClaudeOpen(true)}
+        onOpenProjects={() => setIsProjectOpen(true)}
       />
     </div>
   );

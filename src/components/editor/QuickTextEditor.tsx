@@ -1,5 +1,14 @@
 import React, {useRef, useEffect} from 'react';
-import {AlertCircle, CheckCircle2, Code2} from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Code2,
+  Box,
+  Database,
+  Globe,
+  Zap,
+  Layout,
+} from 'lucide-react';
 import {type ParserDiagnostic} from '../../types/spec';
 
 interface QuickTextEditorProps {
@@ -7,6 +16,8 @@ interface QuickTextEditorProps {
   onChange: (val: string) => void;
   diagnostics: ParserDiagnostic[];
   entityCount: {classes: number; ui: number; connections: number};
+  onInsertSnippet?: (snippet: string) => void;
+  highlightedEntity?: string | null;
 }
 
 export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
@@ -14,11 +25,56 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
   onChange,
   diagnostics,
   entityCount,
+  onInsertSnippet,
+  highlightedEntity,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
 
   const lines = value.split('\n');
+
+  // Compute lines related to highlighted entity
+  const highlightedLines = React.useMemo(() => {
+    if (!highlightedEntity) return new Set<number>();
+    const cleanId = highlightedEntity.replace(
+      /^(entity-|ui-|table-|api-|event-|state-)/,
+      ''
+    );
+    const lineIndices = new Set<number>();
+    let matching = false;
+    let baseIndent = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      const indent = line.search(/\S/);
+
+      // Check if this line starts the entity
+      const declMatch = trimmed.match(
+        /^(class|type|interface|ui|db|api|event|state)\s+([A-Za-z0-9_$/]+)/
+      );
+      if (declMatch) {
+        const entityName = declMatch[2];
+        if (entityName === cleanId) {
+          matching = true;
+          baseIndent = indent;
+          lineIndices.add(i + 1);
+          continue;
+        } else if (matching && indent <= baseIndent) {
+          matching = false;
+        }
+      }
+
+      if (matching) {
+        if (indent > baseIndent || trimmed === '') {
+          lineIndices.add(i + 1);
+        } else {
+          matching = false;
+        }
+      }
+    }
+    return lineIndices;
+  }, [value, highlightedEntity, lines]);
 
   // Handle Tab key for indentation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -33,14 +89,12 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
       const newValue = value.substring(0, start) + '  ' + value.substring(end);
       onChange(newValue);
 
-      // Restore cursor position
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2;
       }, 0);
     }
   };
 
-  // Sync scrolling between line numbers and textarea
   const handleScroll = () => {
     if (textareaRef.current && lineNumbersRef.current) {
       lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
@@ -74,7 +128,64 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
         </div>
       </div>
 
-      {/* Editor Main Surface */}
+      {/* Snippet Quick Insertion Bar */}
+      {onInsertSnippet && (
+        <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border bg-muted/15 text-[11px] overflow-x-auto select-none">
+          <span className="text-muted-foreground mr-1">Insert:</span>
+          <button
+            type="button"
+            onClick={() =>
+              onInsertSnippet('\nclass NewService\n  + execute(): void\n')
+            }
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border hover:bg-muted text-foreground transition-colors"
+          >
+            <Box className="h-3 w-3 text-purple-500" />
+            <span>Class</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onInsertSnippet('\ndb NewTable\n  + id: uuid pk\n')}
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border hover:bg-muted text-foreground transition-colors"
+          >
+            <Database className="h-3 w-3 text-emerald-500" />
+            <span>DB Table</span>
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              onInsertSnippet(
+                '\napi /api/v1/resource\n  + GET /list(): Item[]\n'
+              )
+            }
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border hover:bg-muted text-foreground transition-colors"
+          >
+            <Globe className="h-3 w-3 text-amber-500" />
+            <span>API</span>
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              onInsertSnippet('\nevent ResourceCreated(EventPayload)\n')
+            }
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border hover:bg-muted text-foreground transition-colors"
+          >
+            <Zap className="h-3 w-3 text-violet-500" />
+            <span>Event</span>
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              onInsertSnippet('\nui NewView\n  ui ChildComponent\n')
+            }
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border hover:bg-muted text-foreground transition-colors"
+          >
+            <Layout className="h-3 w-3 text-sky-500" />
+            <span>UI</span>
+          </button>
+        </div>
+      )}
+
+      {/* Editor Surface */}
       <div className="flex-1 relative flex overflow-hidden font-mono text-xs">
         {/* Line Numbers Gutter */}
         <div
@@ -84,10 +195,17 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
           {lines.map((_, i) => {
             const lineNum = i + 1;
             const hasDiag = diagnostics.some(d => d.line === lineNum);
+            const isHighlighted = highlightedLines.has(lineNum);
             return (
               <div
                 key={lineNum}
-                className={hasDiag ? 'text-amber-500 font-bold' : ''}
+                className={
+                  hasDiag
+                    ? 'text-amber-500 font-bold'
+                    : isHighlighted
+                      ? 'text-primary font-bold bg-primary/10'
+                      : ''
+                }
               >
                 {lineNum}
               </div>
@@ -95,7 +213,7 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
           })}
         </div>
 
-        {/* Text Input */}
+        {/* Text Area */}
         <textarea
           ref={textareaRef}
           value={value}
@@ -108,7 +226,7 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
         />
       </div>
 
-      {/* Inline Diagnostics Drawer (if any) */}
+      {/* Inline Diagnostics Console */}
       {diagnostics.length > 0 && (
         <div className="max-h-28 overflow-y-auto border-t border-border bg-amber-500/10 p-2 text-[11px] space-y-1">
           {diagnostics.map((diag, idx) => (
@@ -125,7 +243,7 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
         </div>
       )}
 
-      {/* Status Bar Footer */}
+      {/* Footer */}
       <div className="flex items-center justify-between px-3 py-1.5 border-t border-border bg-muted/40 text-[11px] text-muted-foreground">
         <div className="flex items-center gap-3">
           <span>{lines.length} lines</span>
