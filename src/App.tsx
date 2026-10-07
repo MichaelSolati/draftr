@@ -4,6 +4,7 @@ import {TopNav} from './components/layout/TopNav';
 import {QuickTextEditor} from './components/editor/QuickTextEditor';
 import {ArchitectureCanvas} from './components/canvas/ArchitectureCanvas';
 import {ExportModal} from './components/export/ExportModal';
+import {ImportModal} from './components/import/ImportModal';
 import {ClaudeHandoffModal} from './components/agent/ClaudeHandoffModal';
 import {ProjectModal} from './components/workspace/ProjectModal';
 import {CommandPalette} from './components/palette/CommandPalette';
@@ -74,6 +75,7 @@ export const AppContent: React.FC = () => {
   });
 
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isClaudeOpen, setIsClaudeOpen] = useState(false);
   const [isProjectOpen, setIsProjectOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
@@ -200,6 +202,18 @@ export const AppContent: React.FC = () => {
     });
   };
 
+  const handleImportCode = (dslText: string, mode: 'append' | 'replace') => {
+    setProject(prev => {
+      const nextText =
+        mode === 'replace'
+          ? dslText
+          : `${prev.rawOutlineText.trimEnd()}\n\n// Ingested Codebase\n${dslText}`;
+      const next = {...prev, rawOutlineText: nextText, updatedAt: Date.now()};
+      triggerAutosave(next);
+      return next;
+    });
+  };
+
   const handleNodeDragStop = (id: string, position: {x: number; y: number}) => {
     setNodePositions(prev => ({...prev, [id]: position}));
   };
@@ -283,6 +297,7 @@ export const AppContent: React.FC = () => {
         projectName={project.name}
         onOpenProjectModal={() => setIsProjectOpen(true)}
         onOpenExportModal={() => setIsExportOpen(true)}
+        onOpenImportModal={() => setIsImportOpen(true)}
         onOpenClaudeModal={() => setIsClaudeOpen(true)}
         onOpenPalette={() => setIsPaletteOpen(true)}
       />
@@ -321,6 +336,12 @@ export const AppContent: React.FC = () => {
         project={currentProjectWithPositions}
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
+      />
+
+      <ImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImport={handleImportCode}
       />
 
       <ClaudeHandoffModal

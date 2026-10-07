@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Layers,
   FileCode,
+  FileInput,
   Send,
   FolderGit2,
   ChevronDown,
@@ -13,6 +14,7 @@ interface TopNavProps {
   projectName: string;
   onOpenProjectModal: () => void;
   onOpenExportModal: () => void;
+  onOpenImportModal: () => void;
   onOpenClaudeModal: () => void;
   onOpenPalette: () => void;
 }
@@ -21,6 +23,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   projectName,
   onOpenProjectModal,
   onOpenExportModal,
+  onOpenImportModal,
   onOpenClaudeModal,
   onOpenPalette,
 }) => {
@@ -64,6 +67,15 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Action Controls */}
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onOpenImportModal}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition-colors"
+        >
+          <FileInput className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Import</span>
+        </button>
+
         <button
           type="button"
           onClick={onOpenExportModal}
