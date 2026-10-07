@@ -1,4 +1,5 @@
 import React, {useState, useEffect, useMemo, useCallback, useRef} from 'react';
+import {PanelLeftOpen} from 'lucide-react';
 import {ThemeProvider} from './components/theme/ThemeProvider';
 import {TopNav} from './components/layout/TopNav';
 import {QuickTextEditor} from './components/editor/QuickTextEditor';
@@ -83,6 +84,7 @@ export const AppContent: React.FC = () => {
   const [isProjectOpen, setIsProjectOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [isEditorMinimized, setIsEditorMinimized] = useState(false);
   const [nodePositions, setNodePositions] = useState<
     Record<string, {x: number; y: number}>
   >({});
@@ -324,22 +326,40 @@ export const AppContent: React.FC = () => {
         onOpenPalette={() => setIsPaletteOpen(true)}
       />
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Quick-Text Editor (42% width) */}
-        <div className="w-[42%] min-w-[320px] max-w-[600px] h-full shrink-0">
-          <QuickTextEditor
-            value={project.rawOutlineText}
-            onChange={handleTextChange}
-            diagnostics={combinedDiagnostics}
-            onInsertSnippet={handleInsertSnippet}
-            highlightedEntity={selectedEntityId}
-            entityCount={{
-              classes: parseResult.classes.length,
-              ui: parseResult.uiComponents.length,
-              connections: parseResult.connections.length,
-            }}
-          />
-        </div>
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left: Quick-Text Editor or Minimized Strip */}
+        {isEditorMinimized ? (
+          <div className="w-10 h-full border-r border-border bg-card flex flex-col items-center py-3 shrink-0 select-none">
+            <button
+              type="button"
+              onClick={() => setIsEditorMinimized(false)}
+              title="Expand Outline Editor"
+              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+            <div className="mt-8 text-[11px] font-medium text-muted-foreground tracking-wider uppercase [writing-mode:vertical-lr] rotate-180">
+              Outline Editor
+            </div>
+          </div>
+        ) : (
+          <div className="w-[42%] min-w-[320px] max-w-[600px] h-full shrink-0 transition-all duration-300">
+            <QuickTextEditor
+              value={project.rawOutlineText}
+              onChange={handleTextChange}
+              diagnostics={combinedDiagnostics}
+              onInsertSnippet={handleInsertSnippet}
+              highlightedEntity={selectedEntityId}
+              isMinimized={isEditorMinimized}
+              onToggleMinimize={() => setIsEditorMinimized(true)}
+              entityCount={{
+                classes: parseResult.classes.length,
+                ui: parseResult.uiComponents.length,
+                connections: parseResult.connections.length,
+              }}
+            />
+          </div>
+        )}
 
         {/* Right: Architecture Visual Canvas */}
         <div className="flex-1 h-full overflow-hidden">

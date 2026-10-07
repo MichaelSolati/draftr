@@ -1,16 +1,21 @@
-import React, {useMemo, useCallback, useState} from 'react';
+import React, {useMemo, useCallback, useState, useEffect} from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
   MarkerType,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
   type Node,
   type Edge,
   type OnConnect,
   type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import {Maximize2, Focus} from 'lucide-react';
 import {ClassNode} from './nodes/ClassNode';
 import {UINode} from './nodes/UINode';
 import {TableNode} from './nodes/TableNode';
@@ -41,7 +46,7 @@ interface ArchitectureCanvasProps {
   selectedEntityId?: string | null;
 }
 
-export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
+const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
   project,
   onConnectWire,
   onNodeDragStop,
@@ -49,9 +54,10 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   selectedEntityId,
 }) => {
   const [activeFilter, setActiveFilter] = useState<DomainType | 'all'>('all');
+  const {fitView, setCenter} = useReactFlow();
 
   // Convert project domain entities to React Flow Nodes
-  const nodes: Node[] = useMemo(() => {
+  const computedNodes: Node[] = useMemo(() => {
     const list: Node[] = [];
 
     // 1. Classes / Types (Logic)
@@ -169,8 +175,8 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   ]);
 
   // Convert project connections to React Flow Edges
-  const edges: Edge[] = useMemo(() => {
-    const visibleNodeIds = new Set(nodes.map(n => n.id));
+  const computedEdges: Edge[] = useMemo(() => {
+    const visibleNodeIds = new Set(computedNodes.map(n => n.id));
 
     return project.connections
       .filter(
@@ -223,7 +229,19 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           labelBgStyle: {fill: 'hsl(var(--card))'},
         };
       });
-  }, [project.connections, nodes]);
+  }, [project.connections, computedNodes]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(computedNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(computedEdges);
+
+  // Sync internal nodes state whenever outline changes or filter changes
+  useEffect(() => {
+    setNodes(computedNodes);
+  }, [computedNodes, setNodes]);
+
+  useEffect(() => {
+    setEdges(computedEdges);
+  }, [computedEdges, setEdges]);
 
   const handleConnect: OnConnect = useCallback(
     (connection: Connection) => {
@@ -252,6 +270,24 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
     [nodes, onConnectWire]
   );
 
+  const handleCenterContent = useCallback(() => {
+    fitView({padding: 0.2, duration: 800});
+  }, [fitView]);
+
+  const handleCenterSelected = useCallback(() => {
+    if (!selectedEntityId) {
+      fitView({padding: 0.2, duration: 800});
+      return;
+    }
+    const node = nodes.find(n => n.id === selectedEntityId);
+    if (node) {
+      setCenter(node.position.x + 120, node.position.y + 100, {
+        zoom: 1.1,
+        duration: 800,
+      });
+    }
+  }, [selectedEntityId, nodes, setCenter, fitView]);
+
   const filters: Array<{key: DomainType | 'all'; label: string}> = [
     {key: 'all', label: 'All'},
     {key: 'logic', label: 'Logic'},
@@ -262,7 +298,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   ];
 
   return (
-    <div className="h-full w-full bg-background relative">
+    <div className="h-full w-full bg-background relative select-none">
       {/* Floating Domain Filter Pill Bar */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-md border border-border rounded-lg p-1 shadow-md">
         {filters.map(f => (
@@ -281,10 +317,36 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
         ))}
       </div>
 
+      {/* Floating Canvas Controls: Center to Content & Focus Selected */}
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-card/90 backdrop-blur-md border border-border rounded-lg p-1 shadow-md">
+        <button
+          type="button"
+          onClick={handleCenterContent}
+          title="Center to Content"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md text-foreground hover:bg-accent transition-colors"
+        >
+          <Maximize2 className="h-3.5 w-3.5 text-primary" />
+          <span>Center to Content</span>
+        </button>
+        {selectedEntityId && (
+          <button
+            type="button"
+            onClick={handleCenterSelected}
+            title="Focus Selected Entity"
+            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            <Focus className="h-3.5 w-3.5" />
+            <span>Focus</span>
+          </button>
+        )}
+      </div>
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
         onNodeClick={(_, node) => {
           if (onSelectEntity) onSelectEntity(node.id);
@@ -298,6 +360,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           }
         }}
         fitView
+        fitViewOptions={{padding: 0.2, duration: 600}}
         className="bg-dot-pattern"
       >
         <Background gap={16} size={1} />
@@ -316,5 +379,13 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
         />
       </ReactFlow>
     </div>
+  );
+};
+
+export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = props => {
+  return (
+    <ReactFlowProvider>
+      <InnerCanvas {...props} />
+    </ReactFlowProvider>
   );
 };

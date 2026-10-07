@@ -8,6 +8,8 @@ import {
   Globe,
   Zap,
   Layout,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import {type ParserDiagnostic} from '../../types/spec';
 
@@ -18,6 +20,8 @@ interface QuickTextEditorProps {
   entityCount: {classes: number; ui: number; connections: number};
   onInsertSnippet?: (snippet: string) => void;
   highlightedEntity?: string | null;
+  isMinimized?: boolean;
+  onToggleMinimize?: () => void;
 }
 
 export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
@@ -27,6 +31,8 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
   entityCount,
   onInsertSnippet,
   highlightedEntity,
+  isMinimized = false,
+  onToggleMinimize,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -124,6 +130,22 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
               <AlertCircle className="h-3 w-3" />
               {diagnostics.length} diagnostic{diagnostics.length > 1 ? 's' : ''}
             </span>
+          )}
+          {onToggleMinimize && (
+            <button
+              type="button"
+              onClick={onToggleMinimize}
+              title={
+                isMinimized ? 'Expand Text Editor' : 'Minimize Text Editor'
+              }
+              className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors ml-1"
+            >
+              {isMinimized ? (
+                <PanelLeftOpen className="h-3.5 w-3.5" />
+              ) : (
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              )}
+            </button>
           )}
         </div>
       </div>
