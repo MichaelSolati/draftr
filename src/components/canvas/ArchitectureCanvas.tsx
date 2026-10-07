@@ -43,6 +43,7 @@ interface ArchitectureCanvasProps {
   ) => void;
   onNodeDragStop?: (id: string, position: {x: number; y: number}) => void;
   onSelectEntity?: (entityId: string | null) => void;
+  onUpdateEntityText?: (entityName: string, newSnippet: string) => void;
   selectedEntityId?: string | null;
 }
 
@@ -51,17 +52,30 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
   onConnectWire,
   onNodeDragStop,
   onSelectEntity,
+  onUpdateEntityText,
   selectedEntityId,
 }) => {
-  const [activeFilter, setActiveFilter] = useState<DomainType | 'all'>('all');
+  // Multi-select active filters (empty or including 'all' means all enabled)
+  const [activeFilters, setActiveFilters] = useState<Set<DomainType>>(
+    new Set<DomainType>(['logic', 'ui', 'database', 'api', 'event', 'state'])
+  );
+  const [isAllSelected, setIsAllSelected] = useState(true);
   const {fitView, setCenter} = useReactFlow();
+
+  const isDomainVisible = useCallback(
+    (domain: DomainType) => {
+      if (isAllSelected) return true;
+      return activeFilters.has(domain);
+    },
+    [isAllSelected, activeFilters]
+  );
 
   // Convert project domain entities to React Flow Nodes
   const computedNodes: Node[] = useMemo(() => {
     const list: Node[] = [];
 
     // 1. Classes / Types (Logic)
-    if (activeFilter === 'all' || activeFilter === 'logic') {
+    if (isDomainVisible('logic')) {
       project.classes.forEach((cls, idx) => {
         const defaultPos = {
           x: 60 + (idx % 3) * 320,
@@ -71,14 +85,17 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
           id: cls.id,
           type: 'classNode',
           position: cls.position || defaultPos,
-          data: cls as unknown as Record<string, unknown>,
+          data: {
+            ...cls,
+            onUpdateText: onUpdateEntityText,
+          } as unknown as Record<string, unknown>,
           selected: selectedEntityId === cls.id,
         });
       });
     }
 
     // 2. UI Components
-    if (activeFilter === 'all' || activeFilter === 'ui') {
+    if (isDomainVisible('ui')) {
       project.uiComponents.forEach((ui, idx) => {
         const defaultPos = {
           x: 60 + (idx % 3) * 280,
@@ -95,7 +112,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     }
 
     // 3. Database Tables
-    if (activeFilter === 'all' || activeFilter === 'database') {
+    if (isDomainVisible('database')) {
       project.tables?.forEach((tbl, idx) => {
         const defaultPos = {
           x: 60 + (idx % 3) * 300,
@@ -112,7 +129,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     }
 
     // 4. API Routes
-    if (activeFilter === 'all' || activeFilter === 'api') {
+    if (isDomainVisible('api')) {
       project.apiRoutes?.forEach((api, idx) => {
         const defaultPos = {
           x: 1040,
@@ -129,7 +146,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     }
 
     // 5. Events
-    if (activeFilter === 'all' || activeFilter === 'event') {
+    if (isDomainVisible('event')) {
       project.events?.forEach((ev, idx) => {
         const defaultPos = {
           x: 1040,
@@ -146,7 +163,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     }
 
     // 6. States
-    if (activeFilter === 'all' || activeFilter === 'state') {
+    if (isDomainVisible('state')) {
       project.states?.forEach((st, idx) => {
         const defaultPos = {
           x: 1040,
@@ -170,7 +187,8 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     project.apiRoutes,
     project.events,
     project.states,
-    activeFilter,
+    isDomainVisible,
+    onUpdateEntityText,
     selectedEntityId,
   ]);
 
@@ -297,24 +315,79 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     {key: 'event', label: 'Events'},
   ];
 
+  const handleToggleFilter = (key: DomainType | 'all') => {
+    if (key === 'all') {
+      setIsAllSelected(true);
+      setActiveFilters(
+        new Set<DomainType>([
+          'logic',
+          'ui',
+          'database',
+          'api',
+          'event',
+          'state',
+        ])
+      );
+      return;
+    }
+
+    if (isAllSelected) {
+      // Switching from "all" to a specific filter: select only that key
+      setIsAllSelected(false);
+      setActiveFilters(new Set<DomainType>([key]));
+      return;
+    }
+
+    const next = new Set<DomainType>(activeFilters);
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+
+    // If all individual items selected or none selected, revert to all
+    if (next.size === 0 || next.size === 6) {
+      setIsAllSelected(true);
+      setActiveFilters(
+        new Set<DomainType>([
+          'logic',
+          'ui',
+          'database',
+          'api',
+          'event',
+          'state',
+        ])
+      );
+    } else {
+      setIsAllSelected(false);
+      setActiveFilters(next);
+    }
+  };
+
   return (
     <div className="h-full w-full bg-background relative select-none">
       {/* Floating Domain Filter Pill Bar */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-card/90 backdrop-blur-md border border-border rounded-lg p-1 shadow-md">
-        {filters.map(f => (
-          <button
-            key={f.key}
-            type="button"
-            onClick={() => setActiveFilter(f.key)}
-            className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
-              activeFilter === f.key
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+        {filters.map(f => {
+          const isSelected =
+            f.key === 'all'
+              ? isAllSelected
+              : !isAllSelected && activeFilters.has(f.key);
+          return (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => handleToggleFilter(f.key)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                isSelected
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              }`}
+            >
+              {f.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Floating Canvas Controls: Center to Content & Focus Selected */}

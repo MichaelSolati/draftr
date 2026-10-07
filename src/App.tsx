@@ -228,6 +228,46 @@ export const AppContent: React.FC = () => {
     setNodePositions(prev => ({...prev, [id]: position}));
   };
 
+  const handleUpdateEntityText = (entityName: string, newSnippet: string) => {
+    const lines = project.rawOutlineText.split('\n');
+    let startIdx = -1;
+    let endIdx = -1;
+    let baseIndent = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      const indent = line.search(/\S/);
+
+      const declMatch = trimmed.match(
+        /^(class|type|interface)\s+([A-Za-z0-9_$]+)/
+      );
+      if (declMatch && declMatch[2] === entityName) {
+        startIdx = i;
+        baseIndent = indent;
+        continue;
+      }
+
+      if (startIdx !== -1 && endIdx === -1) {
+        if (trimmed === '') {
+          continue;
+        }
+        if (indent <= baseIndent) {
+          endIdx = i;
+          break;
+        }
+      }
+    }
+
+    if (startIdx !== -1) {
+      if (endIdx === -1) endIdx = lines.length;
+      const before = lines.slice(0, startIdx);
+      const after = lines.slice(endIdx);
+      const updatedText = [...before, newSnippet, ...after].join('\n');
+      handleTextChange(updatedText);
+    }
+  };
+
   // Bi-directional sync: dragging wires adds inline calls
   const handleConnectWire = (
     sourceEntity: string,
@@ -368,6 +408,7 @@ export const AppContent: React.FC = () => {
             onConnectWire={handleConnectWire}
             onNodeDragStop={handleNodeDragStop}
             onSelectEntity={setSelectedEntityId}
+            onUpdateEntityText={handleUpdateEntityText}
             selectedEntityId={selectedEntityId}
           />
         </div>
