@@ -7,9 +7,21 @@ export const TableNode: React.FC<NodeProps> = memo(({data}) => {
   const spec = data as unknown as TableSpec;
 
   return (
-    <div className="min-w-[240px] rounded-lg border border-emerald-500/30 bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-hidden">
+    <div className="relative min-w-[240px] rounded-lg border border-emerald-500/30 bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-visible">
+      {/* Node-level Handles */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!h-2.5 !w-2.5 !bg-emerald-500/50 !border-2 !border-background"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!h-2.5 !w-2.5 !bg-emerald-500/50 !border-2 !border-background"
+      />
+
       {/* Node Header */}
-      <div className="flex items-center justify-between border-b border-emerald-500/20 bg-emerald-500/10 px-3 py-2">
+      <div className="flex items-center justify-between border-b border-emerald-500/20 bg-emerald-500/10 px-3 py-2 rounded-t-lg">
         <div className="flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400">
           <Database className="h-3.5 w-3.5" />
           <span>{spec.name}</span>
@@ -20,20 +32,21 @@ export const TableNode: React.FC<NodeProps> = memo(({data}) => {
       </div>
 
       {/* Columns List */}
-      <div className="p-2 space-y-1 bg-background/50">
+      <div className="p-2 space-y-1 bg-background/50 rounded-b-lg">
         {spec.columns && spec.columns.length > 0 ? (
           spec.columns.map((col, idx) => (
             <div
               key={`col-${idx}`}
-              className="relative flex items-center justify-between py-0.5 px-1 font-mono text-[11px] group"
+              className="relative flex items-center justify-between py-1 px-1 font-mono text-[11px] group rounded hover:bg-muted/30 transition-colors"
             >
               {/* Target Handle */}
               <Handle
                 type="target"
                 position={Position.Left}
                 id={col.name}
-                className="!h-2 !w-2 !bg-emerald-500 !border !border-background"
-                style={{left: -12}}
+                className="!h-2.5 !w-2.5 !bg-emerald-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
+                style={{left: -5}}
+                title={`Target column: ${spec.name}.${col.name}`}
               />
 
               <div className="flex items-center gap-1">
@@ -78,8 +91,9 @@ export const TableNode: React.FC<NodeProps> = memo(({data}) => {
                 type="source"
                 position={Position.Right}
                 id={col.name}
-                className="!h-2 !w-2 !bg-emerald-500 !border !border-background"
-                style={{right: -12}}
+                className="!h-2.5 !w-2.5 !bg-emerald-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
+                style={{right: -5}}
+                title={`Source column: ${spec.name}.${col.name}`}
               />
             </div>
           ))

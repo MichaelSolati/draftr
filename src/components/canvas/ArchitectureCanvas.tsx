@@ -236,33 +236,108 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         const isForeignKey = conn.type === 'foreignKey';
         const isEmits = conn.type === 'emits';
 
-        let strokeColor = 'hsl(var(--primary))';
+        let strokeColor = '#f59e0b';
         let isAnimated = isInvokes;
         let dashArray: string | undefined = undefined;
-        let edgeLabel = conn.targetMember || '';
+        let edgeLabel = conn.targetMember ? `${conn.targetMember}()` : '';
 
         if (conn.type === 'binds') {
           strokeColor = '#0284c7';
           dashArray = '5,5';
           edgeLabel = 'binds';
+          isAnimated = false;
         } else if (isForeignKey) {
           strokeColor = '#10b981';
-          edgeLabel = 'references';
+          edgeLabel = conn.targetMember
+            ? `fk → ${conn.targetMember}`
+            : 'references';
+          isAnimated = false;
         } else if (isEmits) {
           strokeColor = '#8b5cf6';
           isAnimated = true;
           dashArray = '4,4';
-          edgeLabel = 'emits';
+          edgeLabel = conn.targetMember
+            ? `emits → ${conn.targetMember}()`
+            : 'emits';
+        } else if (isInvokes) {
+          strokeColor = '#f59e0b';
+          isAnimated = true;
+          dashArray = '6,3';
+          edgeLabel = conn.targetMember
+            ? `calls ${conn.targetMember}()`
+            : 'calls';
+        }
+
+        // Validate and resolve sourceHandle
+        let sourceHandle: string | undefined = undefined;
+        if (conn.sourceMember) {
+          if (conn.sourceId.startsWith('entity-')) {
+            const cls = project.classes.find(c => c.id === conn.sourceId);
+            if (cls) {
+              const hasMeth = cls.methods?.some(
+                m => m.name === conn.sourceMember
+              );
+              const hasProp = cls.properties?.some(
+                p => p.name === conn.sourceMember
+              );
+              if (hasMeth || hasProp) sourceHandle = conn.sourceMember;
+            }
+          } else if (conn.sourceId.startsWith('api-')) {
+            const route = project.apiRoutes.find(r => r.id === conn.sourceId);
+            if (route) {
+              const ep = route.endpoints?.find(
+                e =>
+                  `${e.method} ${e.name}` === conn.sourceMember ||
+                  `${e.method}-${e.name}` === conn.sourceMember
+              );
+              if (ep) sourceHandle = `${ep.method} ${ep.name}`;
+            }
+          } else if (conn.sourceId.startsWith('table-')) {
+            const tbl = project.tables.find(t => t.id === conn.sourceId);
+            if (tbl && tbl.columns?.some(c => c.name === conn.sourceMember)) {
+              sourceHandle = conn.sourceMember;
+            }
+          } else {
+            sourceHandle = conn.sourceMember;
+          }
+        }
+
+        // Validate and resolve targetHandle
+        let targetHandle: string | undefined = undefined;
+        if (conn.targetMember) {
+          if (conn.targetId.startsWith('entity-')) {
+            const cls = project.classes.find(c => c.id === conn.targetId);
+            if (cls) {
+              const hasMeth = cls.methods?.some(
+                m => m.name === conn.targetMember
+              );
+              const hasProp = cls.properties?.some(
+                p => p.name === conn.targetMember
+              );
+              if (hasMeth || hasProp) targetHandle = conn.targetMember;
+            }
+          } else if (conn.targetId.startsWith('table-')) {
+            const tbl = project.tables.find(t => t.id === conn.targetId);
+            if (tbl && tbl.columns?.some(c => c.name === conn.targetMember)) {
+              targetHandle = conn.targetMember;
+            }
+          } else {
+            targetHandle = conn.targetMember;
+          }
         }
 
         return {
           id: conn.id,
           source: conn.sourceId,
-          sourceHandle: conn.sourceMember || undefined,
+          sourceHandle,
           target: conn.targetId,
-          targetHandle: conn.targetMember || undefined,
+          targetHandle,
           animated: isAnimated,
           type: 'smoothstep',
+          pathOptions: {
+            borderRadius: 16,
+            offset: 20,
+          },
           style: {
             stroke: strokeColor,
             strokeWidth: 2,
@@ -271,10 +346,26 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
           markerEnd: {
             type: MarkerType.ArrowClosed,
             color: strokeColor,
+            width: 14,
+            height: 14,
           },
           label: edgeLabel,
-          labelStyle: {fontSize: 10, fill: 'hsl(var(--foreground))'},
-          labelBgStyle: {fill: 'hsl(var(--card))'},
+          labelStyle: {
+            fontSize: 10,
+            fontWeight: 600,
+            fill: 'hsl(var(--foreground))',
+            fontFamily:
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          },
+          labelBgStyle: {
+            fill: 'hsl(var(--card))',
+            fillOpacity: 0.95,
+            stroke: strokeColor,
+            strokeWidth: 1,
+            rx: 4,
+            ry: 4,
+          },
+          labelBgPadding: [6, 3] as [number, number],
         };
       });
   }, [project.connections, computedNodes]);

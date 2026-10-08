@@ -119,14 +119,24 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
   return (
     <div
       onDoubleClick={!isEditing ? handleStartEdit : undefined}
-      className={`min-w-[280px] max-w-[380px] rounded-lg border border-border bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs ${
-        isEditing
-          ? 'overflow-visible z-50 ring-2 ring-primary/40'
-          : 'overflow-hidden'
+      className={`relative min-w-[280px] max-w-[380px] rounded-lg border border-border bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-visible ${
+        isEditing ? 'z-50 ring-2 ring-primary/40' : ''
       }`}
     >
+      {/* Node-level Handles */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!h-2.5 !w-2.5 !bg-primary/50 !border-2 !border-background"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!h-2.5 !w-2.5 !bg-primary/50 !border-2 !border-background"
+      />
+
       {/* Node Header */}
-      <div className="flex items-center justify-between border-b border-border bg-muted/60 px-3 py-2">
+      <div className="flex items-center justify-between border-b border-border bg-muted/60 px-3 py-2 rounded-t-lg">
         <div className="flex items-center gap-1.5 font-semibold text-foreground truncate">
           <Box className="h-3.5 w-3.5 text-primary shrink-0" />
           <span className="truncate">{spec.name}</span>
@@ -252,8 +262,18 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                     filteredProperties.map((prop, idx) => (
                       <div
                         key={`prop-${idx}`}
-                        className="flex items-center justify-between text-muted-foreground font-mono"
+                        className="relative flex items-center justify-between text-muted-foreground font-mono group py-0.5 px-1 rounded hover:bg-muted/30 transition-colors"
                       >
+                        {/* Target Handle (Left) */}
+                        <Handle
+                          type="target"
+                          position={Position.Left}
+                          id={prop.name}
+                          className="!h-2.5 !w-2.5 !bg-sky-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
+                          style={{left: -5}}
+                          title={`Target: ${spec.name}.${prop.name}`}
+                        />
+
                         <div className="flex items-center truncate mr-2">
                           {renderVisibilityIcon(prop.visibility)}
                           <span className="text-foreground truncate">
@@ -263,6 +283,16 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                         <span className="text-[11px] text-muted-foreground/80 shrink-0">
                           {prop.type}
                         </span>
+
+                        {/* Source Handle (Right) */}
+                        <Handle
+                          type="source"
+                          position={Position.Right}
+                          id={prop.name}
+                          className="!h-2.5 !w-2.5 !bg-sky-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
+                          style={{right: -5}}
+                          title={`Source: ${spec.name}.${prop.name}`}
+                        />
                       </div>
                     ))
                   )}
@@ -273,7 +303,7 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
 
           {/* Methods Section */}
           {spec.methods && spec.methods.length > 0 && (
-            <div className="px-3 py-1.5 bg-background/70">
+            <div className="px-3 py-1.5 bg-background/70 rounded-b-lg">
               <div
                 onClick={() => setIsMethodsOpen(prev => !prev)}
                 className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground uppercase mb-1 cursor-pointer select-none hover:text-foreground"
@@ -293,15 +323,16 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                     filteredMethods.map((meth, idx) => (
                       <div
                         key={`meth-${idx}`}
-                        className="relative flex items-center justify-between text-muted-foreground font-mono group py-0.5"
+                        className="relative flex items-center justify-between text-muted-foreground font-mono group py-0.5 px-1 rounded hover:bg-muted/30 transition-colors"
                       >
                         {/* Target Handle (Left) */}
                         <Handle
                           type="target"
                           position={Position.Left}
                           id={meth.name}
-                          className="!h-2.5 !w-2.5 !bg-primary !border-2 !border-background transition-transform group-hover:scale-125"
-                          style={{left: -16}}
+                          className="!h-2.5 !w-2.5 !bg-amber-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
+                          style={{left: -5}}
+                          title={`Target: ${spec.name}.${meth.name}()`}
                         />
 
                         <div className="flex items-center truncate mr-2">
@@ -320,8 +351,9 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                           type="source"
                           position={Position.Right}
                           id={meth.name}
-                          className="!h-2.5 !w-2.5 !bg-primary !border-2 !border-background transition-transform group-hover:scale-125"
-                          style={{right: -16}}
+                          className="!h-2.5 !w-2.5 !bg-amber-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
+                          style={{right: -5}}
+                          title={`Source: ${spec.name}.${meth.name}()`}
                         />
                       </div>
                     ))

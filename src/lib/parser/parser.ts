@@ -282,7 +282,12 @@ export function parseOutline(text: string): ParseResult {
         const targetClass =
           dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
         const targetMethod =
-          dotIdx !== -1 ? targetStr.slice(dotIdx + 1).trim() : 'handle';
+          dotIdx !== -1
+            ? targetStr
+                .slice(dotIdx + 1)
+                .trim()
+                .replace(/\(\s*\)$/, '')
+            : 'handle';
         targets.push({targetClass, targetMethod});
 
         connections.push({
@@ -403,7 +408,12 @@ export function parseOutline(text: string): ParseResult {
             const targetClass =
               dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
             const targetMethod =
-              dotIdx !== -1 ? targetStr.slice(dotIdx + 1).trim() : 'handle';
+              dotIdx !== -1
+                ? targetStr
+                    .slice(dotIdx + 1)
+                    .trim()
+                    .replace(/\(\s*\)$/, '')
+                : 'handle';
             targetHandler = {targetClass, targetMethod};
 
             connections.push({
@@ -469,14 +479,23 @@ export function parseOutline(text: string): ParseResult {
 
           const dotIdx = callTarget.indexOf('.');
           if (dotIdx !== -1) {
+            let tc = callTarget.slice(0, dotIdx).trim();
+            const tm = callTarget
+              .slice(dotIdx + 1)
+              .trim()
+              .replace(/\(\s*\)$/, '');
+            if (tc.toLowerCase() === 'this' || tc.toLowerCase() === 'self') {
+              tc = currentClass.name;
+            }
             inlineCall = {
-              targetClass: callTarget.slice(0, dotIdx).trim(),
-              targetMethod: callTarget.slice(dotIdx + 1).trim(),
+              targetClass: tc,
+              targetMethod: tm,
             };
           } else if (callTarget) {
+            const cleaned = callTarget.replace(/\(\s*\)$/, '').trim();
             inlineCall = {
-              targetClass: callTarget,
-              targetMethod: 'default',
+              targetClass: currentClass.name,
+              targetMethod: cleaned,
             };
           }
         }
@@ -562,10 +581,25 @@ export function parseOutline(text: string): ParseResult {
 
         if (targetStr) {
           const dotIdx = targetStr.indexOf('.');
-          const targetClass =
-            dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
-          const targetMethod =
-            dotIdx !== -1 ? targetStr.slice(dotIdx + 1).trim() : 'default';
+          let targetClass =
+            dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : '';
+          let targetMethod =
+            dotIdx !== -1
+              ? targetStr
+                  .slice(dotIdx + 1)
+                  .trim()
+                  .replace(/\(\s*\)$/, '')
+              : targetStr.replace(/\(\s*\)$/, '').trim();
+
+          if (dotIdx === -1) {
+            targetClass = parentClass.name;
+            targetMethod = targetStr.replace(/\(\s*\)$/, '').trim();
+          } else if (
+            targetClass.toLowerCase() === 'this' ||
+            targetClass.toLowerCase() === 'self'
+          ) {
+            targetClass = parentClass.name;
+          }
 
           if (!parentMethod.calls) {
             parentMethod.calls = [];

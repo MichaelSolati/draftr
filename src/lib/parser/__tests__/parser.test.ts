@@ -195,4 +195,53 @@ class ServiceWithModifiers
       'public'
     );
   });
+
+  it('normalizes method call targets with parentheses, intra-class calls, and this/self', () => {
+    const text = `
+class Worker
+  + doWork(): void
+    -> Worker.helper()
+    -> this.cleanup()
+    -> notify()
+  + helper(): void
+  + cleanup(): void
+  + notify(): void
+
+api /api/v1/jobs
+  + POST /trigger(): boolean -> Worker.doWork()
+
+event JobFailed(Error) -> Worker.cleanup()
+`;
+    const result = parseOutline(text);
+    const worker = result.classes.find(c => c.name === 'Worker');
+    expect(worker).toBeDefined();
+
+    const doWork = worker?.methods.find(m => m.name === 'doWork');
+    expect(doWork?.calls).toEqual([
+      {targetClass: 'Worker', targetMethod: 'helper'},
+      {targetClass: 'Worker', targetMethod: 'cleanup'},
+      {targetClass: 'Worker', targetMethod: 'notify'},
+    ]);
+
+    // Check connections generated for calls
+    const workerCalls = result.connections.filter(
+      c => c.sourceId === 'entity-Worker' && c.type === 'invokes'
+    );
+    expect(workerCalls).toHaveLength(3);
+    expect(workerCalls[0].targetMember).toBe('helper');
+    expect(workerCalls[1].targetMember).toBe('cleanup');
+    expect(workerCalls[2].targetMember).toBe('notify');
+
+    // Check API endpoint connection
+    const apiConn = result.connections.find(
+      c => c.sourceId === 'api-_api_v1_jobs'
+    );
+    expect(apiConn?.targetMember).toBe('doWork');
+
+    // Check Event connection
+    const eventConn = result.connections.find(
+      c => c.sourceId === 'event-JobFailed'
+    );
+    expect(eventConn?.targetMember).toBe('cleanup');
+  });
 });

@@ -35,9 +35,21 @@ export const ApiNode: React.FC<NodeProps> = memo(({data}) => {
   const spec = data as unknown as ApiRouteSpec;
 
   return (
-    <div className="min-w-[240px] rounded-lg border border-amber-500/30 bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-hidden">
+    <div className="relative min-w-[240px] rounded-lg border border-amber-500/30 bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-visible">
+      {/* Node-level Handles */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!h-2.5 !w-2.5 !bg-amber-500/50 !border-2 !border-background"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!h-2.5 !w-2.5 !bg-amber-500/50 !border-2 !border-background"
+      />
+
       {/* Node Header */}
-      <div className="flex items-center justify-between border-b border-amber-500/20 bg-amber-500/10 px-3 py-2">
+      <div className="flex items-center justify-between border-b border-amber-500/20 bg-amber-500/10 px-3 py-2 rounded-t-lg">
         <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400">
           <Globe className="h-3.5 w-3.5" />
           <span className="font-mono text-[11px] truncate">{spec.path}</span>
@@ -48,12 +60,12 @@ export const ApiNode: React.FC<NodeProps> = memo(({data}) => {
       </div>
 
       {/* Endpoints List */}
-      <div className="p-2 space-y-1.5 bg-background/50">
+      <div className="p-2 space-y-1.5 bg-background/50 rounded-b-lg">
         {spec.endpoints && spec.endpoints.length > 0 ? (
           spec.endpoints.map((ep, idx) => (
             <div
               key={`ep-${idx}`}
-              className="relative flex items-center justify-between py-0.5 px-1 font-mono text-[11px] group"
+              className="relative flex items-center justify-between py-1 px-1 font-mono text-[11px] group rounded hover:bg-muted/30 transition-colors"
             >
               <div className="flex items-center gap-1.5">
                 {renderMethodBadge(ep.method)}
@@ -70,9 +82,10 @@ export const ApiNode: React.FC<NodeProps> = memo(({data}) => {
               <Handle
                 type="source"
                 position={Position.Right}
-                id={`${ep.method}-${ep.name}`}
-                className="!h-2 !w-2 !bg-amber-500 !border !border-background"
-                style={{right: -12}}
+                id={`${ep.method} ${ep.name}`}
+                className="!h-2.5 !w-2.5 !bg-amber-500 !border-2 !border-background transition-transform group-hover:scale-150 shadow-sm"
+                style={{right: -5}}
+                title={`Endpoint: ${ep.method} ${ep.name}`}
               />
             </div>
           ))

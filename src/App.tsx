@@ -319,7 +319,10 @@ export const AppContent: React.FC = () => {
       }
 
       if (insideTargetClass && !modified) {
-        const methodRegex = new RegExp(`^([+\\-#])\\s*${sourceMember}\\s*\\(`);
+        const methodRegex = new RegExp(
+          `^(?:[+\\-#]|(?:public|private|protected|readonly|get|set)\\b)\\s*${sourceMember}\\s*\\(`,
+          'i'
+        );
         if (methodRegex.test(trimmed)) {
           modified = true;
           const arrowIndex = line.indexOf('->');
