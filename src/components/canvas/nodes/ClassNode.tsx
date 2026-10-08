@@ -126,16 +126,6 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
       {/* Node-level Handles */}
       <Handle
         type="target"
-        position={Position.Left}
-        className="!h-2.5 !w-2.5 !bg-primary/50 !border-2 !border-background"
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!h-2.5 !w-2.5 !bg-primary/50 !border-2 !border-background"
-      />
-      <Handle
-        type="target"
         position={Position.Top}
         className="!h-2.5 !w-2.5 !bg-primary/50 !border-2 !border-background"
       />

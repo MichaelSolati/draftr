@@ -95,6 +95,29 @@ export function computeLineIndentTabs(line: string): number {
   return indentLevel;
 }
 
+export function resolveTargetEntityId(
+  targetName: string,
+  classes: ClassSpec[],
+  tables: TableSpec[],
+  apiRoutes: ApiRouteSpec[],
+  events: EventSpec[],
+  states: StateSpec[]
+): string {
+  const matchingClass = classes.find(c => c.name === targetName);
+  if (matchingClass) return matchingClass.id;
+  const matchingTable = tables.find(t => t.name === targetName);
+  if (matchingTable) return matchingTable.id;
+  const matchingApi = apiRoutes.find(
+    r => r.path === targetName || r.id === targetName
+  );
+  if (matchingApi) return matchingApi.id;
+  const matchingEvent = events.find(e => e.name === targetName);
+  if (matchingEvent) return matchingEvent.id;
+  const matchingState = states.find(s => s.name === targetName);
+  if (matchingState) return matchingState.id;
+  return `entity-${targetName}`;
+}
+
 export function parseOutline(text: string): ParseResult {
   const lines = text.split('\n');
   const classes: ClassSpec[] = [];
@@ -316,17 +339,45 @@ export function parseOutline(text: string): ParseResult {
         const currentUI = uiComponents.find(u => u.id === parent.id);
         if (currentUI && !currentUI.boundLogicEntities.includes(targetEntity)) {
           currentUI.boundLogicEntities.push(targetEntity);
+          const targetId = resolveTargetEntityId(
+            targetEntity,
+            classes,
+            tables,
+            apiRoutes,
+            events,
+            states
+          );
           connections.push({
             id: `edge-${parent.id}-binds-${targetEntity}`,
             sourceId: parent.id,
-            targetId: `entity-${targetEntity}`,
+            targetId,
             type: 'binds',
+          });
+        }
+      } else if (parent && parent.type === 'class') {
+        const targetEntity = bindsMatch[1];
+        const currentClass = classes.find(c => c.id === parent.id);
+        if (currentClass) {
+          const targetId = resolveTargetEntityId(
+            targetEntity,
+            classes,
+            tables,
+            apiRoutes,
+            events,
+            states
+          );
+          connections.push({
+            id: `edge-${currentClass.id}-calls->${targetEntity}`,
+            sourceId: currentClass.id,
+            targetId,
+            type: 'invokes',
           });
         }
       } else {
         diagnostics.push({
           line: lineNum,
-          message: '"binds" keyword must be nested under a UI component',
+          message:
+            '"binds" keyword must be nested under a UI component or class',
           severity: 'warning',
         });
       }
@@ -472,9 +523,17 @@ export function parseOutline(text: string): ParseResult {
           null;
         let mainContent = memberContent;
 
-        const arrowIdx = memberContent.indexOf('->');
+        let arrowIdx = memberContent.indexOf('->');
+        let arrowLength = 2;
+        if (arrowIdx === -1) {
+          const callsMatch = memberContent.match(/\b(?:calls|invokes)\b/i);
+          if (callsMatch && callsMatch.index !== undefined) {
+            arrowIdx = callsMatch.index;
+            arrowLength = callsMatch[0].length;
+          }
+        }
         if (arrowIdx !== -1) {
-          const callTarget = memberContent.slice(arrowIdx + 2).trim();
+          const callTarget = memberContent.slice(arrowIdx + arrowLength).trim();
           mainContent = memberContent.slice(0, arrowIdx).trim();
 
           const dotIdx = callTarget.indexOf('.');
@@ -536,11 +595,19 @@ export function parseOutline(text: string): ParseResult {
           });
 
           if (inlineCall) {
+            const targetId = resolveTargetEntityId(
+              inlineCall.targetClass,
+              classes,
+              tables,
+              apiRoutes,
+              events,
+              states
+            );
             connections.push({
               id: `edge-${parent.id}-${methodName}->${inlineCall.targetClass}.${inlineCall.targetMethod}`,
               sourceId: parent.id,
               sourceMember: methodName,
-              targetId: `entity-${inlineCall.targetClass}`,
+              targetId,
               targetMember: inlineCall.targetMethod,
               type: 'invokes',
             });
@@ -566,6 +633,42 @@ export function parseOutline(text: string): ParseResult {
           line: lineNum,
           message: `Malformed member definition "${trimmed}". Expected "prop: type" or "method(params): returnType"`,
           severity: 'warning',
+        });
+        continue;
+      }
+
+      // Direct class dependency / call: calls Target, -> Target, or binds Target
+      const callMatch = trimmed.match(
+        /^(?:calls|invokes|->|binds)\s+([A-Za-z0-9_$.]+)/i
+      );
+      if (callMatch) {
+        const targetStr = callMatch[1].trim();
+        const dotIdx = targetStr.indexOf('.');
+        const targetClass =
+          dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
+        const targetMethod =
+          dotIdx !== -1
+            ? targetStr
+                .slice(dotIdx + 1)
+                .trim()
+                .replace(/\(\s*\)$/, '')
+            : '';
+
+        const targetId = resolveTargetEntityId(
+          targetClass,
+          classes,
+          tables,
+          apiRoutes,
+          events,
+          states
+        );
+
+        connections.push({
+          id: `edge-${currentClass.id}-calls->${targetClass}${targetMethod ? '.' + targetMethod : ''}`,
+          sourceId: currentClass.id,
+          targetId,
+          targetMember: targetMethod || undefined,
+          type: 'invokes',
         });
         continue;
       }
@@ -625,12 +728,21 @@ export function parseOutline(text: string): ParseResult {
           }
           parentMethod.calls.push({targetClass, targetMethod});
 
+          const targetId = resolveTargetEntityId(
+            targetClass,
+            classes,
+            tables,
+            apiRoutes,
+            events,
+            states
+          );
+
           connections.push({
             id: `edge-${parentClass.id}-${parentMethod.name}->${targetClass}.${targetMethod}`,
             sourceId: parentClass.id,
             sourceMember: parentMethod.name,
-            targetId: `entity-${targetClass}`,
-            targetMember: targetMethod,
+            targetId,
+            targetMember: targetMethod || undefined,
             type: 'invokes',
           });
           continue;
@@ -643,6 +755,35 @@ export function parseOutline(text: string): ParseResult {
       message: `Unrecognized statement "${trimmed}"`,
       severity: 'info',
     });
+  }
+
+  // Post-processing pass: Re-resolve connection targetIds now that all entities are declared
+  for (const conn of connections) {
+    if (conn.targetId.startsWith('entity-')) {
+      const targetName = conn.targetId.slice('entity-'.length);
+      const matchingTable = tables.find(t => t.name === targetName);
+      if (matchingTable) {
+        conn.targetId = matchingTable.id;
+        continue;
+      }
+      const matchingApi = apiRoutes.find(
+        r => r.path === targetName || r.id === targetName
+      );
+      if (matchingApi) {
+        conn.targetId = matchingApi.id;
+        continue;
+      }
+      const matchingEvent = events.find(e => e.name === targetName);
+      if (matchingEvent) {
+        conn.targetId = matchingEvent.id;
+        continue;
+      }
+      const matchingState = states.find(s => s.name === targetName);
+      if (matchingState) {
+        conn.targetId = matchingState.id;
+        continue;
+      }
+    }
   }
 
   return {

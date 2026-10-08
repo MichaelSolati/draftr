@@ -297,45 +297,88 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // Bi-directional sync: dragging wires adds inline calls
+  // Bi-directional sync: dragging wires adds inline calls or entity-level connections
   const handleConnectWire = (
     sourceEntity: string,
     sourceMember: string | null,
     targetEntity: string,
     targetMember: string | null
   ) => {
-    if (!sourceMember || !targetMember) return;
-
     const lines = project.rawOutlineText.split('\n');
-    let insideTargetClass = false;
-    let modified = false;
 
-    const newLines = lines.map(line => {
-      const trimmed = line.trim();
-      const classMatch = trimmed.match(/^class\s+([A-Za-z0-9_$]+)/);
+    // Case 1: Method-to-method wire
+    if (sourceMember && targetMember) {
+      let insideTargetClass = false;
+      let modified = false;
 
-      if (classMatch) {
-        insideTargetClass = classMatch[1] === sourceEntity;
+      const newLines = lines.map(line => {
+        const trimmed = line.trim();
+        const classMatch = trimmed.match(/^class\s+([A-Za-z0-9_$]+)/);
+
+        if (classMatch) {
+          insideTargetClass = classMatch[1] === sourceEntity;
+        }
+
+        if (insideTargetClass && !modified) {
+          const methodRegex = new RegExp(
+            `^(?:[+\\-#]|(?:public|private|protected|readonly|get|set)\\b)\\s*${sourceMember}\\s*\\(`,
+            'i'
+          );
+          if (methodRegex.test(trimmed)) {
+            modified = true;
+            const arrowIndex = line.indexOf('->');
+            const cleanLine =
+              arrowIndex !== -1 ? line.slice(0, arrowIndex).trimEnd() : line;
+            return `${cleanLine} -> ${targetEntity}.${targetMember}`;
+          }
+        }
+        return line;
+      });
+
+      if (modified) {
+        handleTextChange(newLines.join('\n'));
+        return;
       }
+    }
 
-      if (insideTargetClass && !modified) {
-        const methodRegex = new RegExp(
-          `^(?:[+\\-#]|(?:public|private|protected|readonly|get|set)\\b)\\s*${sourceMember}\\s*\\(`,
-          'i'
-        );
-        if (methodRegex.test(trimmed)) {
-          modified = true;
-          const arrowIndex = line.indexOf('->');
-          const cleanLine =
-            arrowIndex !== -1 ? line.slice(0, arrowIndex).trimEnd() : line;
-          return `${cleanLine} -> ${targetEntity}.${targetMember}`;
+    // Case 2: Node-level wire (Class to Class / Service, or UI to Class)
+    let insideSource = false;
+    let insertIndex = -1;
+    let isUI = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      const entityMatch = trimmed.match(
+        /^(class|ui|interface|type)\s+([A-Za-z0-9_$]+)/
+      );
+      if (entityMatch) {
+        if (insideSource && insertIndex === -1) {
+          insertIndex = i;
+        }
+        if (entityMatch[2] === sourceEntity) {
+          insideSource = true;
+          isUI = entityMatch[1] === 'ui';
+        } else {
+          insideSource = false;
         }
       }
-      return line;
-    });
+    }
 
-    if (modified) {
-      handleTextChange(newLines.join('\n'));
+    if (insideSource && insertIndex === -1) {
+      insertIndex = lines.length;
+    }
+
+    if (insertIndex !== -1) {
+      const directive = isUI
+        ? `  binds ${targetEntity}`
+        : `  calls ${targetEntity}${targetMember ? '.' + targetMember : ''}`;
+      const alreadyExists = lines
+        .slice(0, insertIndex)
+        .some(l => l.trim() === directive.trim());
+      if (!alreadyExists) {
+        lines.splice(insertIndex, 0, directive);
+        handleTextChange(lines.join('\n'));
+      }
     }
   };
 

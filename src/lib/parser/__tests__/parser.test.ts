@@ -281,4 +281,39 @@ class SecurityService
     expect(authCalls[2].targetId).toBe('entity-SecurityService');
     expect(authCalls[2].sourceMember).toBe('verify');
   });
+
+  it('supports direct calls and binds under classes like UI components', () => {
+    const text = `
+class OrderService
+  calls PaymentService
+  calls InventoryTable
+  binds NotificationService
+
+class PaymentService
+  + charge(): boolean
+
+db InventoryTable
+  + id: uuid pk
+
+class NotificationService
+  + send(): void
+`;
+    const result = parseOutline(text);
+    const orderCalls = result.connections.filter(
+      c => c.sourceId === 'entity-OrderService'
+    );
+    expect(orderCalls).toHaveLength(3);
+
+    // 1. calls PaymentService -> entity-PaymentService
+    expect(orderCalls[0].targetId).toBe('entity-PaymentService');
+    expect(orderCalls[0].type).toBe('invokes');
+
+    // 2. calls InventoryTable -> table-InventoryTable
+    expect(orderCalls[1].targetId).toBe('table-InventoryTable');
+    expect(orderCalls[1].type).toBe('invokes');
+
+    // 3. binds NotificationService -> entity-NotificationService
+    expect(orderCalls[2].targetId).toBe('entity-NotificationService');
+    expect(orderCalls[2].type).toBe('invokes');
+  });
 });
