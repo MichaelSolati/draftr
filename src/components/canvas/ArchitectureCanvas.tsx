@@ -229,7 +229,9 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     return project.connections
       .filter(
         conn =>
-          visibleNodeIds.has(conn.sourceId) && visibleNodeIds.has(conn.targetId)
+          conn.sourceId !== conn.targetId &&
+          visibleNodeIds.has(conn.sourceId) &&
+          visibleNodeIds.has(conn.targetId)
       )
       .map(conn => {
         const isInvokes = conn.type === 'invokes';
@@ -239,7 +241,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         let strokeColor = '#f59e0b';
         let isAnimated = isInvokes;
         let dashArray: string | undefined = undefined;
-        let edgeLabel = conn.targetMember ? `${conn.targetMember}()` : '';
+        let edgeLabel = '';
 
         if (conn.type === 'binds') {
           strokeColor = '#0284c7';
@@ -263,75 +265,21 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
           strokeColor = '#f59e0b';
           isAnimated = true;
           dashArray = '6,3';
-          edgeLabel = conn.targetMember
-            ? `calls ${conn.targetMember}()`
-            : 'calls';
-        }
-
-        // Validate and resolve sourceHandle
-        let sourceHandle: string | undefined = undefined;
-        if (conn.sourceMember) {
-          if (conn.sourceId.startsWith('entity-')) {
-            const cls = project.classes?.find(c => c.id === conn.sourceId);
-            if (cls) {
-              const hasMeth = cls.methods?.some(
-                m => m.name === conn.sourceMember
-              );
-              const hasProp = cls.properties?.some(
-                p => p.name === conn.sourceMember
-              );
-              if (hasMeth || hasProp) sourceHandle = conn.sourceMember;
-            }
-          } else if (conn.sourceId.startsWith('api-')) {
-            const route = project.apiRoutes?.find(r => r.id === conn.sourceId);
-            if (route) {
-              const ep = route.endpoints?.find(
-                e =>
-                  `${e.method} ${e.name}` === conn.sourceMember ||
-                  `${e.method}-${e.name}` === conn.sourceMember
-              );
-              if (ep) sourceHandle = `${ep.method} ${ep.name}`;
-            }
-          } else if (conn.sourceId.startsWith('table-')) {
-            const tbl = project.tables?.find(t => t.id === conn.sourceId);
-            if (tbl && tbl.columns?.some(c => c.name === conn.sourceMember)) {
-              sourceHandle = conn.sourceMember;
-            }
+          if (conn.sourceMember && conn.targetMember) {
+            edgeLabel = `${conn.sourceMember}() → ${conn.targetMember}()`;
+          } else if (conn.targetMember) {
+            edgeLabel = `calls ${conn.targetMember}()`;
+          } else if (conn.sourceMember) {
+            edgeLabel = `${conn.sourceMember}() calls`;
           } else {
-            sourceHandle = conn.sourceMember;
-          }
-        }
-
-        // Validate and resolve targetHandle
-        let targetHandle: string | undefined = undefined;
-        if (conn.targetMember) {
-          if (conn.targetId.startsWith('entity-')) {
-            const cls = project.classes?.find(c => c.id === conn.targetId);
-            if (cls) {
-              const hasMeth = cls.methods?.some(
-                m => m.name === conn.targetMember
-              );
-              const hasProp = cls.properties?.some(
-                p => p.name === conn.targetMember
-              );
-              if (hasMeth || hasProp) targetHandle = conn.targetMember;
-            }
-          } else if (conn.targetId.startsWith('table-')) {
-            const tbl = project.tables?.find(t => t.id === conn.targetId);
-            if (tbl && tbl.columns?.some(c => c.name === conn.targetMember)) {
-              targetHandle = conn.targetMember;
-            }
-          } else {
-            targetHandle = conn.targetMember;
+            edgeLabel = 'calls';
           }
         }
 
         return {
           id: conn.id,
           source: conn.sourceId,
-          sourceHandle,
           target: conn.targetId,
-          targetHandle,
           animated: isAnimated,
           type: 'smoothstep',
           pathOptions: {

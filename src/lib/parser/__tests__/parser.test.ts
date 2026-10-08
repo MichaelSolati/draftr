@@ -244,4 +244,41 @@ event JobFailed(Error) -> Worker.cleanup()
     );
     expect(eventConn?.targetMember).toBe('cleanup');
   });
+
+  it('links two classes when calling an external class with or without a method', () => {
+    const text = `
+class AuthService
+  + login(): Session -> Database.query
+  + logout(): void -> SessionStore
+  + verify(): boolean
+    calls SecurityService
+
+class Database
+  + query(): any
+
+class SessionStore
+  + clear(): void
+
+class SecurityService
+  + check(): boolean
+`;
+    const result = parseOutline(text);
+    const authCalls = result.connections.filter(
+      c => c.sourceId === 'entity-AuthService' && c.type === 'invokes'
+    );
+    expect(authCalls).toHaveLength(3);
+
+    // 1. Method to method: AuthService.login -> Database.query
+    expect(authCalls[0].targetId).toBe('entity-Database');
+    expect(authCalls[0].sourceMember).toBe('login');
+    expect(authCalls[0].targetMember).toBe('query');
+
+    // 2. Inline class call: AuthService.logout -> SessionStore
+    expect(authCalls[1].targetId).toBe('entity-SessionStore');
+    expect(authCalls[1].sourceMember).toBe('logout');
+
+    // 3. Nested class call: AuthService.verify calls SecurityService
+    expect(authCalls[2].targetId).toBe('entity-SecurityService');
+    expect(authCalls[2].sourceMember).toBe('verify');
+  });
 });

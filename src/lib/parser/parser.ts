@@ -493,10 +493,20 @@ export function parseOutline(text: string): ParseResult {
             };
           } else if (callTarget) {
             const cleaned = callTarget.replace(/\(\s*\)$/, '').trim();
-            inlineCall = {
-              targetClass: currentClass.name,
-              targetMethod: cleaned,
-            };
+            const isLocal =
+              currentClass.methods.some(m => m.name === cleaned) ||
+              /^[a-z]/.test(cleaned);
+            if (isLocal) {
+              inlineCall = {
+                targetClass: currentClass.name,
+                targetMethod: cleaned,
+              };
+            } else {
+              inlineCall = {
+                targetClass: cleaned,
+                targetMethod: '',
+              };
+            }
           }
         }
 
@@ -592,8 +602,17 @@ export function parseOutline(text: string): ParseResult {
               : targetStr.replace(/\(\s*\)$/, '').trim();
 
           if (dotIdx === -1) {
-            targetClass = parentClass.name;
-            targetMethod = targetStr.replace(/\(\s*\)$/, '').trim();
+            const cleaned = targetStr.replace(/\(\s*\)$/, '').trim();
+            const isLocal =
+              parentClass.methods.some(m => m.name === cleaned) ||
+              /^[a-z]/.test(cleaned);
+            if (isLocal) {
+              targetClass = parentClass.name;
+              targetMethod = cleaned;
+            } else {
+              targetClass = cleaned;
+              targetMethod = '';
+            }
           } else if (
             targetClass.toLowerCase() === 'this' ||
             targetClass.toLowerCase() === 'self'

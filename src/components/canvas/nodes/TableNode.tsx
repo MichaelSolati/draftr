@@ -11,6 +11,16 @@ export const TableNode: React.FC<NodeProps> = memo(({data}) => {
       {/* Node-level Handles */}
       <Handle
         type="target"
+        position={Position.Left}
+        className="!h-2.5 !w-2.5 !bg-emerald-500/50 !border-2 !border-background"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!h-2.5 !w-2.5 !bg-emerald-500/50 !border-2 !border-background"
+      />
+      <Handle
+        type="target"
         position={Position.Top}
         className="!h-2.5 !w-2.5 !bg-emerald-500/50 !border-2 !border-background"
       />
@@ -37,18 +47,8 @@ export const TableNode: React.FC<NodeProps> = memo(({data}) => {
           spec.columns.map((col, idx) => (
             <div
               key={`col-${idx}`}
-              className="relative flex items-center justify-between py-1 px-1 font-mono text-[11px] group rounded hover:bg-muted/30 transition-colors"
+              className="flex items-center justify-between py-1 px-1 font-mono text-[11px] rounded hover:bg-muted/30 transition-colors"
             >
-              {/* Target Handle */}
-              <Handle
-                type="target"
-                position={Position.Left}
-                id={col.name}
-                className="!h-2.5 !w-2.5 !bg-emerald-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
-                style={{left: -5}}
-                title={`Target column: ${spec.name}.${col.name}`}
-              />
-
               <div className="flex items-center gap-1">
                 {col.isPrimary && (
                   <Key className="h-3 w-3 text-amber-500 inline shrink-0" />
@@ -85,16 +85,6 @@ export const TableNode: React.FC<NodeProps> = memo(({data}) => {
               <span className="text-[10px] text-muted-foreground">
                 {col.type}
               </span>
-
-              {/* Source Handle */}
-              <Handle
-                type="source"
-                position={Position.Right}
-                id={col.name}
-                className="!h-2.5 !w-2.5 !bg-emerald-500 !border-2 !border-background transition-transform group-hover:scale-150 !cursor-crosshair shadow-sm"
-                style={{right: -5}}
-                title={`Source column: ${spec.name}.${col.name}`}
-              />
             </div>
           ))
         ) : (
