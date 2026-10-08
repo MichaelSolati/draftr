@@ -15,6 +15,7 @@ export default defineConfig({
       include: [
         'src/lib/**/*.ts',
         'src/components/editor/archSpecCodeMirror.ts',
+        'src/components/layout/SyntaxDocPanel.tsx',
       ],
       thresholds: {
         lines: 80,

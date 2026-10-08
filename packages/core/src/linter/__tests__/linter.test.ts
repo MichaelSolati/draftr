@@ -82,17 +82,13 @@ ui OrderView
     expect(
       issues.some(i => i.title === 'Architectural Layer Boundary Violation')
     ).toBe(true);
-    expect(issues.some(i => i.title === 'Unreferenced Entity')).toBe(true);
   });
 
-  it('recognizes entities referenced in method return types or parameters', () => {
+  it('allows root orchestrators and entrypoint services without noisy unreferenced warnings', () => {
     const text = `
 class MainService
   + start(): Pi.help
   + hi(): string
-
-ui App
-  binds MainService
 
 class Pi
   + help: string
@@ -109,8 +105,6 @@ class Pi
       createdAt: Date.now(),
     };
     const issues = lintArchitecture(project);
-    // Pi should NOT be flagged as unreferenced because start() returns Pi.help
-    const unreferencedPi = issues.find(i => i.id === 'unreferenced-service-Pi');
-    expect(unreferencedPi).toBeUndefined();
+    expect(issues.some(i => i.title === 'Unreferenced Entity')).toBe(false);
   });
 });
