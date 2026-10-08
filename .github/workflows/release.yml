@@ -39,7 +39,9 @@ jobs:
       - name: Bump Version
         id: bump_version
         run: |
-          node scripts/bump-version.js ${{ github.event.inputs.bump_type }}
+          npx bumpp --recursive --release ${{ github.event.inputs.bump_type }} --no-commit --no-tag --no-push -y
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: Update Changelog and Release Notes
         run: |
