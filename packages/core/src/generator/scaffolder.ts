@@ -13,13 +13,27 @@ export function generateProjectFiles(
 
   // 1. Generate Services / Classes
   for (const cls of project.classes) {
+    const isInterface = cls.kind === 'interface';
+    const isAbstract = cls.kind === 'abstract';
+    const declWord = isInterface
+      ? 'interface'
+      : isAbstract
+        ? 'abstract class'
+        : 'class';
+    const extendsClause = cls.superClass ? ` extends ${cls.superClass}` : '';
+    const implementsClause =
+      cls.interfaces && cls.interfaces.length > 0 && !isInterface
+        ? ` implements ${cls.interfaces.join(', ')}`
+        : '';
+
     const lines: string[] = [
       `// Auto-generated architecture stub: ${cls.name}`,
-      `export ${cls.kind} ${cls.name} {`,
+      `export ${declWord} ${cls.name}${extendsClause}${implementsClause} {`,
     ];
 
     for (const prop of cls.properties) {
-      lines.push(`  ${prop.visibility} ${prop.name}: ${prop.type};`);
+      const vis = isInterface ? '' : `${prop.visibility} `;
+      lines.push(`  ${vis}${prop.name}: ${prop.type};`);
     }
 
     if (cls.properties.length > 0 && cls.methods.length > 0) {
@@ -30,20 +44,24 @@ export function generateProjectFiles(
       const params = meth.parameters
         .map(p => `${p.name}: ${p.type}`)
         .join(', ');
-      lines.push(
-        `  ${meth.visibility} ${meth.name}(${params}): ${meth.returnType} {`
-      );
-      if (meth.calls && meth.calls.length > 0) {
-        for (const call of meth.calls) {
-          lines.push(
-            `    // Invokes ${call.targetClass}.${call.targetMethod}()`
-          );
+      if (isInterface) {
+        lines.push(`  ${meth.name}(${params}): ${meth.returnType};`);
+      } else {
+        lines.push(
+          `  ${meth.visibility} ${meth.name}(${params}): ${meth.returnType} {`
+        );
+        if (meth.calls && meth.calls.length > 0) {
+          for (const call of meth.calls) {
+            lines.push(
+              `    // Invokes ${call.targetClass}.${call.targetMethod}()`
+            );
+          }
         }
+        lines.push(
+          `    throw new Error('Method ${meth.name} not implemented.');`
+        );
+        lines.push('  }');
       }
-      lines.push(
-        `    throw new Error('Method ${meth.name} not implemented.');`
-      );
-      lines.push('  }');
       lines.push('');
     }
 

@@ -370,4 +370,51 @@ class Pi
     expect(selfConn?.targetId).toBe('entity-Pi');
     expect(selfConn?.targetMember).toBe('helpc');
   });
+
+  it('parses polymorphism with abstract class, interface, extends, and implements', () => {
+    const text = `
+interface PaymentGateway
+  + charge(amount: number): Receipt
+  + refund(id: string): boolean
+
+abstract class BaseService
+  # logger: string
+
+class StripeGateway extends BaseService implements PaymentGateway, Auditable
+  + charge(amount: number): Receipt
+  + refund(id: string): boolean
+`;
+    const result = parseOutline(text);
+    expect(result.classes).toHaveLength(3);
+
+    const iface = result.classes.find(c => c.name === 'PaymentGateway');
+    expect(iface?.kind).toBe('interface');
+    expect(iface?.methods).toHaveLength(2);
+
+    const base = result.classes.find(c => c.name === 'BaseService');
+    expect(base?.kind).toBe('abstract');
+
+    const stripe = result.classes.find(c => c.name === 'StripeGateway');
+    expect(stripe?.kind).toBe('class');
+    expect(stripe?.superClass).toBe('BaseService');
+    expect(stripe?.interfaces).toEqual(['PaymentGateway', 'Auditable']);
+
+    // Check inherits edge
+    const inheritsEdge = result.connections.find(c => c.type === 'inherits');
+    expect(inheritsEdge).toBeDefined();
+    expect(inheritsEdge?.sourceId).toBe('entity-StripeGateway');
+    expect(inheritsEdge?.targetId).toBe('entity-BaseService');
+
+    // Check implements edges
+    const implementsEdges = result.connections.filter(
+      c => c.type === 'implements'
+    );
+    expect(implementsEdges).toHaveLength(2);
+    expect(
+      implementsEdges.some(e => e.targetId === 'entity-PaymentGateway')
+    ).toBe(true);
+    expect(implementsEdges.some(e => e.targetId === 'entity-Auditable')).toBe(
+      true
+    );
+  });
 });

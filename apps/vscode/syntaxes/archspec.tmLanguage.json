@@ -10,6 +10,9 @@
       "include": "#declarations"
     },
     {
+      "include": "#polymorphism"
+    },
+    {
       "include": "#modifiers"
     },
     {
@@ -43,7 +46,7 @@
     "declarations": {
       "patterns": [
         {
-          "match": "\\b(class|interface|type|ui|db|api|event|state)\\s+([A-Za-z0-9_$/]+)",
+          "match": "\\b(abstract\\s+class|class|interface|type|ui|db|api|event|state)\\s+([A-Za-z0-9_$/]+)",
           "captures": {
             "1": { "name": "keyword.control.declaration.archspec" },
             "2": { "name": "entity.name.type.class.archspec" }
@@ -51,10 +54,18 @@
         }
       ]
     },
+    "polymorphism": {
+      "patterns": [
+        {
+          "match": "\\b(extends|implements)\\b",
+          "name": "keyword.control.inheritance.archspec"
+        }
+      ]
+    },
     "modifiers": {
       "patterns": [
         {
-          "match": "\\b(public|private|protected|readonly|get|set)\\b",
+          "match": "\\b(public|private|protected|readonly|get|set|override)\\b",
           "name": "storage.modifier.archspec"
         },
         {

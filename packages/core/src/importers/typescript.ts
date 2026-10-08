@@ -8,8 +8,7 @@ export function importTypeScriptToDSL(tsCode: string): string {
   const dslChunks: string[] = [];
 
   let currentEntity: {
-    name: string;
-    kind: 'class' | 'type' | 'interface';
+    header: string;
   } | null = null;
   const currentMembers: string[] = [];
 
@@ -22,18 +21,25 @@ export function importTypeScriptToDSL(tsCode: string): string {
 
     // Check entity declaration: export class Foo, class Foo, interface Bar, type Baz = ...
     const entityMatch = trimmed.match(
-      /^(?:export\s+)?(class|interface|type)\s+([A-Za-z0-9_$]+)/
+      /^(?:export\s+)?(?:(abstract)\s+)?(class|interface|type)\s+([A-Za-z0-9_$]+)(?:\s+extends\s+([A-Za-z0-9_$]+))?(?:\s+implements\s+([A-Za-z0-9_$,\s]+))?/
     );
     if (entityMatch) {
       if (currentEntity) {
-        dslChunks.push(
-          `${currentEntity.kind} ${currentEntity.name}\n${currentMembers.join('\n')}`
-        );
+        dslChunks.push(`${currentEntity.header}\n${currentMembers.join('\n')}`);
         currentMembers.length = 0;
       }
+      const isAbstract = Boolean(entityMatch[1]);
+      const kind = entityMatch[2];
+      const name = entityMatch[3];
+      const superClass = entityMatch[4]
+        ? ` extends ${entityMatch[4].trim()}`
+        : '';
+      const rawIfaces = entityMatch[5]?.replace(/[{;].*$/, '').trim();
+      const ifaces = rawIfaces ? ` implements ${rawIfaces}` : '';
+      const header = `${isAbstract ? 'abstract class' : kind} ${name}${superClass}${ifaces}`;
+
       currentEntity = {
-        kind: entityMatch[1] as 'class' | 'type' | 'interface',
-        name: entityMatch[2],
+        header,
       };
       continue;
     }
@@ -41,9 +47,7 @@ export function importTypeScriptToDSL(tsCode: string): string {
     // If inside an entity, parse members
     if (currentEntity) {
       if (trimmed === '}' || trimmed === '};') {
-        dslChunks.push(
-          `${currentEntity.kind} ${currentEntity.name}\n${currentMembers.join('\n')}`
-        );
+        dslChunks.push(`${currentEntity.header}\n${currentMembers.join('\n')}`);
         currentEntity = null;
         currentMembers.length = 0;
         continue;
@@ -84,9 +88,7 @@ export function importTypeScriptToDSL(tsCode: string): string {
   }
 
   if (currentEntity && currentMembers.length > 0) {
-    dslChunks.push(
-      `${currentEntity.kind} ${currentEntity.name}\n${currentMembers.join('\n')}`
-    );
+    dslChunks.push(`${currentEntity.header}\n${currentMembers.join('\n')}`);
   }
 
   return dslChunks.join('\n\n');

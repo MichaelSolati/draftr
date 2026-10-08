@@ -39,6 +39,39 @@ class AuthService
     expect(mermaid).toContain('UserService ..> AuthService');
   });
 
+  it('exports interfaces, abstract classes, extends, and implements relations', () => {
+    const text = `
+abstract class Animal
+  + breathe(): void
+
+interface Pet
+  + play(): void
+
+class Dog extends Animal implements Pet
+  + bark(): void
+`;
+    const parsed = parseOutline(text);
+    const project = {
+      id: 'proj-poly',
+      name: 'Polymorphism Project',
+      rawOutlineText: text,
+      classes: parsed.classes,
+      uiComponents: parsed.uiComponents,
+      tables: parsed.tables,
+      apiRoutes: parsed.apiRoutes,
+      events: parsed.events,
+      states: parsed.states,
+      connections: parsed.connections,
+      updatedAt: Date.now(),
+      createdAt: Date.now(),
+    };
+
+    const mermaid = exportToMermaidClassDiagram(project);
+    expect(mermaid).toContain('<<interface>>');
+    expect(mermaid).toContain('Animal <|-- Dog');
+    expect(mermaid).toContain('Pet <|.. Dog');
+  });
+
   it('exports valid ER diagram syntax for database tables', () => {
     const text = `
 db Users

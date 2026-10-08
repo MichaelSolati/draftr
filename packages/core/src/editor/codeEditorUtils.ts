@@ -45,7 +45,11 @@ export const COMMON_TYPES = [
  */
 export const DSL_KEYWORDS = [
   {label: 'class', detail: 'Class or service definition'},
+  {label: 'abstract', detail: 'Abstract class definition'},
   {label: 'interface', detail: 'Interface definition'},
+  {label: 'extends', detail: 'Inherit from base class'},
+  {label: 'implements', detail: 'Implement interface contract'},
+  {label: 'override', detail: 'Override base class member'},
   {label: 'type', detail: 'Type alias'},
   {label: 'ui', detail: 'UI Component declaration'},
   {label: 'db', detail: 'Database table declaration'},
@@ -113,9 +117,11 @@ export function computeEnterIndent(currentLine: string): string {
     return currentIndent;
   }
 
-  // Declaration blocks (class, ui, db, api, event, state, interface, type)
+  // Declaration blocks (class, ui, db, api, event, state, interface, type, abstract class)
   if (
-    /^(class|interface|type|ui|db|api|event|state)\s+/.test(trimmed) ||
+    /^(?:abstract\s+class|class|interface|type|ui|db|api|event|state)\s+/i.test(
+      trimmed
+    ) ||
     trimmed.endsWith(':') ||
     trimmed.endsWith('{')
   ) {
@@ -735,6 +741,36 @@ export function extractReferencedItems(
         });
       }
     }
+
+    // 5. Polymorphism targets: extends SuperClass, implements InterfaceA, InterfaceB
+    const polyMatch = trimmed.match(
+      /^(?:abstract\s+class|class|interface)\s+[A-Za-z0-9_$]+(?:\s+extends\s+([A-Za-z0-9_$]+))?(?:\s+implements\s+([A-Za-z0-9_$,\s]+))?/i
+    );
+    if (polyMatch) {
+      const superClass = polyMatch[1];
+      const rawIfaces = polyMatch[2];
+      if (superClass && !itemsMap.has(superClass)) {
+        itemsMap.set(superClass, {
+          id: `ref-${superClass}`,
+          name: superClass,
+          kind: 'class',
+        });
+      }
+      if (rawIfaces) {
+        rawIfaces
+          .split(/[\s,]+/)
+          .filter(Boolean)
+          .forEach(iface => {
+            if (!itemsMap.has(iface)) {
+              itemsMap.set(iface, {
+                id: `ref-${iface}`,
+                name: iface,
+                kind: 'class',
+              });
+            }
+          });
+      }
+    }
   }
 
   return Array.from(itemsMap.values());
@@ -758,9 +794,9 @@ export function extractEntityRawSnippet(
     const indent = line.search(/\S/);
 
     const declMatch = trimmed.match(
-      /^(class|type|interface|ui|db|api|event|state)\s+([A-Za-z0-9_$/]+)/
+      /^(?:abstract\s+class|class|type|interface|ui|db|api|event|state)\s+([A-Za-z0-9_$/]+)/i
     );
-    if (declMatch && declMatch[2] === entityName) {
+    if (declMatch && declMatch[1] === entityName) {
       startIdx = i;
       baseIndent = indent;
       continue;

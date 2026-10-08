@@ -106,6 +106,11 @@ export const SyntaxDocPanel: React.FC<SyntaxDocPanelProps> = ({
       code: 'class UserService\n  public login(email: string): Session\n  private hashPassword(raw: string): string\n  public profile: UserProfile',
     },
     {
+      title: 'Polymorphism & Contracts (extends & implements)',
+      desc: 'Declare base classes with "abstract class" or contracts with "interface". Classes inherit with "extends <SuperClass>" and satisfy contracts with "implements <InterfaceA>, <InterfaceB>". The linter automatically validates inheritance targets, detects cycles, and checks method contracts.',
+      code: 'interface Repository\n  + findById(id: string): object\n  + save(item: object): void\n\nabstract class BaseService\n  + log(msg: string): void\n\nclass SqlService extends BaseService implements Repository\n  + findById(id: string): object\n  + save(item: object): void',
+    },
+    {
       title: 'Return Types Referencing Other Entities',
       desc: 'Specify direct or dot-notated entity return types. Referenced entities appear as clickable chips and maintain architectural graph connections.',
       code: 'class MainService\n  public start(): Pi.help\n  public hi(a: string): string\n\nclass Pi\n  public help: string',

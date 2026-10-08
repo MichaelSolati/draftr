@@ -42,6 +42,48 @@ db Users
     expect(serviceFile?.content).toContain('login(creds: string): boolean');
   });
 
+  it('generates abstract classes, interfaces, and inheritance signatures', () => {
+    const text = `
+abstract class BaseService
+  + log(msg: string): void
+
+interface IAuth
+  + login(): boolean
+
+class CustomAuthService extends BaseService implements IAuth
+  + login(): boolean
+`;
+    const parsed = parseOutline(text);
+    const project = {
+      id: 'proj',
+      name: 'Scaffold Poly Project',
+      rawOutlineText: text,
+      classes: parsed.classes,
+      uiComponents: parsed.uiComponents,
+      tables: parsed.tables,
+      connections: parsed.connections,
+      updatedAt: Date.now(),
+      createdAt: Date.now(),
+    };
+
+    const files = generateProjectFiles(project);
+    const baseServiceFile = files.find(
+      f => f.path === 'src/services/BaseService.ts'
+    );
+    const iAuthFile = files.find(f => f.path === 'src/services/IAuth.ts');
+    const customAuthFile = files.find(
+      f => f.path === 'src/services/CustomAuthService.ts'
+    );
+
+    expect(baseServiceFile?.content).toContain(
+      'export abstract class BaseService'
+    );
+    expect(iAuthFile?.content).toContain('export interface IAuth');
+    expect(customAuthFile?.content).toContain(
+      'export class CustomAuthService extends BaseService implements IAuth'
+    );
+  });
+
   it('generates API routes and various column types', () => {
     const text = `
 api /users

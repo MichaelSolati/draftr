@@ -7,6 +7,9 @@ export function exportToMermaidClassDiagram(
 
   for (const cls of project.classes) {
     lines.push(`    class ${cls.name} {`);
+    if (cls.kind === 'interface') {
+      lines.push('        <<interface>>');
+    }
     for (const prop of cls.properties) {
       const vis =
         prop.visibility === 'private'
@@ -43,6 +46,14 @@ export function exportToMermaidClassDiagram(
       const sourceName = conn.sourceId.replace(/^ui-/, 'UI_');
       const targetName = conn.targetId.replace(/^entity-/, '');
       lines.push(`    ${sourceName} ..> ${targetName} : "binds"`);
+    } else if (conn.type === 'inherits') {
+      const sourceName = conn.sourceId.replace(/^entity-/, '');
+      const targetName = conn.targetId.replace(/^entity-/, '');
+      lines.push(`    ${targetName} <|-- ${sourceName} : "extends"`);
+    } else if (conn.type === 'implements') {
+      const sourceName = conn.sourceId.replace(/^entity-/, '');
+      const targetName = conn.targetId.replace(/^entity-/, '');
+      lines.push(`    ${targetName} <|.. ${sourceName} : "implements"`);
     }
   }
 

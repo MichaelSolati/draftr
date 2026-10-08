@@ -241,7 +241,16 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         let dashArray: string | undefined = undefined;
         let edgeLabel = '';
 
-        if (conn.type === 'binds') {
+        if (conn.type === 'inherits') {
+          strokeColor = '#a855f7';
+          edgeLabel = 'extends';
+          isAnimated = false;
+        } else if (conn.type === 'implements') {
+          strokeColor = '#06b6d4';
+          dashArray = '5,5';
+          edgeLabel = 'implements';
+          isAnimated = false;
+        } else if (conn.type === 'binds') {
           strokeColor = '#0284c7';
           dashArray = '5,5';
           edgeLabel = 'binds';

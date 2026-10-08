@@ -40,7 +40,18 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
   // Generate fallback text snippet for editing if rawSnippet is not passed
   const getInitialSnippet = () => {
     if (spec.rawSnippet) return spec.rawSnippet;
-    const lines = [`class ${spec.name}`];
+    const kindPrefix =
+      spec.kind === 'abstract'
+        ? 'abstract class'
+        : spec.kind === 'interface'
+          ? 'interface'
+          : 'class';
+    const extendsPart = spec.superClass ? ` extends ${spec.superClass}` : '';
+    const implementsPart =
+      spec.interfaces && spec.interfaces.length > 0
+        ? ` implements ${spec.interfaces.join(', ')}`
+        : '';
+    const lines = [`${kindPrefix} ${spec.name}${extendsPart}${implementsPart}`];
     spec.properties?.forEach(p => {
       const vis =
         p.visibility === 'private'
@@ -171,11 +182,43 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
               </button>
             </div>
           )}
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">
+          <span
+            className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${
+              spec.kind === 'interface'
+                ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+                : spec.kind === 'abstract'
+                  ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                  : 'bg-primary/10 text-primary'
+            }`}
+          >
             {spec.kind || 'class'}
           </span>
         </div>
       </div>
+
+      {/* Polymorphism Subtitle / Badges */}
+      {!isEditing &&
+        (spec.superClass ||
+          (spec.interfaces && spec.interfaces.length > 0)) && (
+          <div className="flex flex-wrap items-center gap-2 px-3 py-1 bg-muted/40 border-b border-border text-[10px] font-mono">
+            {spec.superClass && (
+              <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
+                <span className="text-muted-foreground font-normal">
+                  extends
+                </span>
+                <span>{spec.superClass}</span>
+              </span>
+            )}
+            {spec.interfaces && spec.interfaces.length > 0 && (
+              <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
+                <span className="text-muted-foreground font-normal">
+                  implements
+                </span>
+                <span>{spec.interfaces.join(', ')}</span>
+              </span>
+            )}
+          </div>
+        )}
 
       {/* Referenced Chips in Header if not editing */}
       {!isEditing && referencedItems.length > 0 && (

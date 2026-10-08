@@ -57,7 +57,14 @@ export const archSpecStreamParser = {
       const str = Array.isArray(word) ? word[0] : String(word);
 
       // Top-level block declarations
-      if (/^(class|interface|type|ui|db|api|event|state)$/i.test(str)) {
+      if (
+        /^(class|interface|type|ui|db|api|event|state|abstract)$/i.test(str)
+      ) {
+        return 'keyword';
+      }
+
+      // Polymorphism inheritance & interface implementation
+      if (/^(extends|implements)$/i.test(str)) {
         return 'keyword';
       }
 
@@ -72,7 +79,7 @@ export const archSpecStreamParser = {
       }
 
       // Modifiers
-      if (/^(public|private|protected|readonly|get|set)$/i.test(str)) {
+      if (/^(public|private|protected|readonly|get|set|override)$/i.test(str)) {
         return 'modifier';
       }
 
@@ -169,7 +176,9 @@ export function computeArchSpecIndent(prevLineText: string): number {
 
   // After entity declaration: indent + 2
   if (
-    /^(class|interface|type|ui|db|api|event|state)\s+/i.test(trimmed) ||
+    /^(?:abstract\s+class|class|interface|type|ui|db|api|event|state)\s+/i.test(
+      trimmed
+    ) ||
     trimmed.endsWith(':') ||
     trimmed.endsWith('{')
   ) {
@@ -178,7 +187,7 @@ export function computeArchSpecIndent(prevLineText: string): number {
 
   // After method declaration: indent + 2 (Level 3 for calls)
   if (
-    /^(?:[+#\\-]|(?:public|private|protected|readonly|get|set)\b)?\s*[A-Za-z0-9_$]+\s*\(.*?\)/i.test(
+    /^(?:[+#\\-]|(?:public|private|protected|readonly|get|set|override)\b)?\s*[A-Za-z0-9_$]+\s*\(.*?\)/i.test(
       trimmed
     )
   ) {
@@ -249,17 +258,32 @@ export function createArchSpecCompletions(project?: ArchitectureProject) {
     const options = [
       // Block Declarations
       {label: 'class', type: 'keyword', info: 'Define a logic class / service'},
+      {label: 'abstract', type: 'keyword', info: 'Define an abstract class'},
+      {
+        label: 'interface',
+        type: 'keyword',
+        info: 'Define a contract interface',
+      },
       {label: 'ui', type: 'keyword', info: 'Define a UI component'},
       {label: 'db', type: 'keyword', info: 'Define a database table'},
       {label: 'api', type: 'keyword', info: 'Define an API route'},
       {label: 'event', type: 'keyword', info: 'Define a domain event'},
       {label: 'state', type: 'keyword', info: 'Define a state slice'},
 
+      // Polymorphism
+      {label: 'extends', type: 'keyword', info: 'Inherit from a superclass'},
+      {
+        label: 'implements',
+        type: 'keyword',
+        info: 'Implement interface contracts',
+      },
+
       // Modifiers
       {label: 'public', type: 'keyword', info: 'Public visibility'},
       {label: 'private', type: 'keyword', info: 'Private visibility'},
       {label: 'protected', type: 'keyword', info: 'Protected visibility'},
       {label: 'readonly', type: 'keyword', info: 'Readonly property'},
+      {label: 'override', type: 'keyword', info: 'Override base member'},
 
       // Invocations
       {label: 'calls', type: 'keyword', info: 'Call target method/class'},

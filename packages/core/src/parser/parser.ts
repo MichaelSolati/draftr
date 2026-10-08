@@ -156,13 +156,27 @@ export function parseOutline(text: string): ParseResult {
 
     const parent = stack.length > 0 ? stack[stack.length - 1] : null;
 
-    // 1. Entity Declaration: class <Name>, type <Name>, interface <Name>
+    // 1. Entity Declaration: class <Name>, type <Name>, interface <Name>, abstract class <Name>
     const classMatch = trimmed.match(
-      /^(class|type|interface)\s+([A-Za-z0-9_$]+)/
+      /^(abstract\s+class|class|type|interface)\s+([A-Za-z0-9_$]+)(?:\s+extends\s+([A-Za-z0-9_$]+))?(?:\s+implements\s+([A-Za-z0-9_$,\s]+))?/i
     );
     if (classMatch) {
-      const kind = classMatch[1] as 'class' | 'type' | 'interface';
+      const declType = classMatch[1].toLowerCase().replace(/\s+/, ' ');
+      const kind: 'class' | 'type' | 'interface' | 'abstract' =
+        declType === 'abstract class'
+          ? 'abstract'
+          : (declType as 'class' | 'type' | 'interface');
       const name = classMatch[2];
+      const superClass = classMatch[3] ? classMatch[3].trim() : undefined;
+      const rawInterfaces = classMatch[4];
+      const interfaces = rawInterfaces
+        ? rawInterfaces
+            .replace(/[:/].*$/, '')
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean)
+        : undefined;
+
       const id = `entity-${name}`;
 
       const existing = classes.find(c => c.name === name);
@@ -171,10 +185,32 @@ export function parseOutline(text: string): ParseResult {
           id,
           name,
           kind,
+          superClass,
+          interfaces,
           properties: [],
           methods: [],
         });
         stack.push({indent, type: 'class', id, name});
+
+        if (superClass) {
+          connections.push({
+            id: `edge-${id}-inherits-entity-${superClass}`,
+            sourceId: id,
+            targetId: `entity-${superClass}`,
+            type: 'inherits',
+          });
+        }
+
+        if (interfaces && interfaces.length > 0) {
+          for (const iface of interfaces) {
+            connections.push({
+              id: `edge-${id}-implements-entity-${iface}`,
+              sourceId: id,
+              targetId: `entity-${iface}`,
+              type: 'implements',
+            });
+          }
+        }
       } else {
         diagnostics.push({
           line: lineNum,

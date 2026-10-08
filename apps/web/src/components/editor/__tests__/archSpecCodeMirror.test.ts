@@ -21,6 +21,11 @@ describe('archSpecCodeMirror extensions', () => {
       expect(indent).toBe(2);
     });
 
+    it('indents 2 spaces after abstract class definition', () => {
+      const indent = computeArchSpecIndent('abstract class BaseService');
+      expect(indent).toBe(2);
+    });
+
     it('indents 2 spaces after ui block', () => {
       const indent = computeArchSpecIndent('ui Dashboard');
       expect(indent).toBe(2);
@@ -74,6 +79,10 @@ describe('archSpecCodeMirror extensions', () => {
       const labels = result?.options.map(o => o.label);
       expect(labels).toContain('UserService');
       expect(labels).toContain('class');
+      expect(labels).toContain('abstract');
+      expect(labels).toContain('extends');
+      expect(labels).toContain('implements');
+      expect(labels).toContain('override');
       expect(labels).toContain('calls');
     });
 
@@ -170,13 +179,16 @@ describe('archSpecCodeMirror extensions', () => {
       const pubMod = tokenizeLine('public run');
       expect(pubMod[0].token).toBe('modifier');
 
+      const overrideMod = tokenizeLine('override run');
+      expect(overrideMod[0].token).toBe('modifier');
+
       const pkMod = tokenizeLine('pk id');
       expect(pkMod[0].token).toBe('modifier');
     });
 
     it('tokenizes keywords, verbs, primitives, and types', () => {
-      const kw = tokenizeLine('class ui db api');
-      expect(kw.filter(t => t.token === 'keyword').length).toBe(4);
+      const kw = tokenizeLine('class ui db api abstract extends implements');
+      expect(kw.filter(t => t.token === 'keyword').length).toBe(7);
 
       const verb = tokenizeLine('GET POST');
       expect(verb.filter(t => t.token === 'keyword').length).toBe(2);

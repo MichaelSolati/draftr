@@ -35,7 +35,9 @@ export interface PropertyDefinition {
 export interface ClassSpec {
   id: string;
   name: string;
-  kind: 'class' | 'type' | 'interface';
+  kind: 'class' | 'type' | 'interface' | 'abstract';
+  superClass?: string;
+  interfaces?: string[];
   properties: PropertyDefinition[];
   methods: MethodSignature[];
   position?: {x: number; y: number};
@@ -107,7 +109,13 @@ export interface ConnectionEdge {
   sourceMember?: string;
   targetId: string;
   targetMember?: string;
-  type: 'invokes' | 'binds' | 'inherits' | 'foreignKey' | 'emits';
+  type:
+    | 'invokes'
+    | 'binds'
+    | 'inherits'
+    | 'implements'
+    | 'foreignKey'
+    | 'emits';
 }
 
 export interface ParserDiagnostic {

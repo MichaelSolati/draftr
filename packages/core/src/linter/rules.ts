@@ -1,4 +1,4 @@
-import {type ArchitectureProject} from '../types/spec';
+import {type ArchitectureProject, type ClassSpec} from '../types/spec';
 
 export interface ArchitectureLintIssue {
   id: string;
@@ -111,6 +111,98 @@ export function lintArchitecture(
           description: `UI Component "${ui.name}" binds directly to database table "${bound}". Consider wrapping in a Service.`,
           affectedEntityId: ui.id,
         });
+      }
+    }
+  }
+
+  // 5. Unresolved Inheritance & Interface Target Check
+  for (const cls of project.classes) {
+    if (cls.superClass && !knownClassNames.has(cls.superClass)) {
+      issues.push({
+        id: `missing-superclass-${cls.name}-${cls.superClass}`,
+        severity: 'error',
+        title: 'Unresolved Inheritance Target',
+        description: `Class "${cls.name}" extends non-existent class "${cls.superClass}"`,
+        affectedEntityId: cls.id,
+      });
+    }
+
+    if (cls.interfaces) {
+      for (const iface of cls.interfaces) {
+        if (!knownClassNames.has(iface)) {
+          issues.push({
+            id: `missing-interface-${cls.name}-${iface}`,
+            severity: 'error',
+            title: 'Unresolved Interface Target',
+            description: `Class "${cls.name}" implements non-existent interface "${iface}"`,
+            affectedEntityId: cls.id,
+          });
+        }
+      }
+    }
+  }
+
+  // 6. Circular Inheritance Detector
+  const inheritanceGraph = new Map<string, string | undefined>();
+  for (const cls of project.classes) {
+    if (cls.superClass) {
+      inheritanceGraph.set(cls.name, cls.superClass);
+    }
+  }
+
+  const reportedCycles = new Set<string>();
+  for (const cls of project.classes) {
+    const chain: string[] = [];
+    let curr: string | undefined = cls.name;
+    const seen = new Set<string>();
+
+    while (curr && inheritanceGraph.has(curr)) {
+      if (seen.has(curr)) {
+        const cycleKey = [...chain, curr].sort().join('-');
+        if (!reportedCycles.has(cycleKey)) {
+          reportedCycles.add(cycleKey);
+          issues.push({
+            id: `circular-inheritance-${cls.name}`,
+            severity: 'error',
+            title: 'Circular Inheritance Chain',
+            description: `Circular inheritance hierarchy detected: ${[...chain, curr].join(' ➔ ')}`,
+            affectedEntityId: cls.id,
+          });
+        }
+        break;
+      }
+      seen.add(curr);
+      chain.push(curr);
+      curr = inheritanceGraph.get(curr);
+    }
+  }
+
+  // 7. Interface Contract Compliance Check
+  const interfaceMap = new Map<string, ClassSpec>();
+  for (const cls of project.classes) {
+    if (cls.kind === 'interface') {
+      interfaceMap.set(cls.name, cls);
+    }
+  }
+
+  for (const cls of project.classes) {
+    if (cls.interfaces && cls.kind !== 'interface') {
+      const implementedMethods = new Set(cls.methods.map(m => m.name));
+      for (const ifaceName of cls.interfaces) {
+        const ifaceSpec = interfaceMap.get(ifaceName);
+        if (ifaceSpec) {
+          for (const requiredMethod of ifaceSpec.methods) {
+            if (!implementedMethods.has(requiredMethod.name)) {
+              issues.push({
+                id: `missing-contract-method-${cls.name}-${ifaceName}-${requiredMethod.name}`,
+                severity: 'warning',
+                title: 'Interface Contract Violation',
+                description: `Class "${cls.name}" is missing required method "${requiredMethod.name}()" declared by interface "${ifaceName}"`,
+                affectedEntityId: cls.id,
+              });
+            }
+          }
+        }
       }
     }
   }
