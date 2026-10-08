@@ -144,7 +144,12 @@ describe('codeEditorUtils', () => {
       const mockProjectWithEvent = {
         ...mockProject,
         events: [
-          {id: 'event-OrderCreated', name: 'OrderCreated', payloadType: 'void'},
+          {
+            id: 'event-OrderCreated',
+            name: 'OrderCreated',
+            payloadType: 'void',
+            targets: [],
+          },
         ],
       };
       const refs = extractReferencedItems(snippet, mockProjectWithEvent);

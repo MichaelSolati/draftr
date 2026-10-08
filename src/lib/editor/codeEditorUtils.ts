@@ -377,6 +377,7 @@ export function getActiveTokenInfo(
   isAfterArrowOrCall: boolean;
   isAfterColon: boolean;
   isSubBullet: boolean;
+  isLineStart: boolean;
 } {
   const lineStart = value.lastIndexOf('\n', cursor - 1) + 1;
   const line = value.slice(lineStart, cursor);

@@ -272,7 +272,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         let sourceHandle: string | undefined = undefined;
         if (conn.sourceMember) {
           if (conn.sourceId.startsWith('entity-')) {
-            const cls = project.classes.find(c => c.id === conn.sourceId);
+            const cls = project.classes?.find(c => c.id === conn.sourceId);
             if (cls) {
               const hasMeth = cls.methods?.some(
                 m => m.name === conn.sourceMember
@@ -283,7 +283,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
               if (hasMeth || hasProp) sourceHandle = conn.sourceMember;
             }
           } else if (conn.sourceId.startsWith('api-')) {
-            const route = project.apiRoutes.find(r => r.id === conn.sourceId);
+            const route = project.apiRoutes?.find(r => r.id === conn.sourceId);
             if (route) {
               const ep = route.endpoints?.find(
                 e =>
@@ -293,7 +293,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
               if (ep) sourceHandle = `${ep.method} ${ep.name}`;
             }
           } else if (conn.sourceId.startsWith('table-')) {
-            const tbl = project.tables.find(t => t.id === conn.sourceId);
+            const tbl = project.tables?.find(t => t.id === conn.sourceId);
             if (tbl && tbl.columns?.some(c => c.name === conn.sourceMember)) {
               sourceHandle = conn.sourceMember;
             }
@@ -306,7 +306,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         let targetHandle: string | undefined = undefined;
         if (conn.targetMember) {
           if (conn.targetId.startsWith('entity-')) {
-            const cls = project.classes.find(c => c.id === conn.targetId);
+            const cls = project.classes?.find(c => c.id === conn.targetId);
             if (cls) {
               const hasMeth = cls.methods?.some(
                 m => m.name === conn.targetMember
@@ -317,7 +317,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
               if (hasMeth || hasProp) targetHandle = conn.targetMember;
             }
           } else if (conn.targetId.startsWith('table-')) {
-            const tbl = project.tables.find(t => t.id === conn.targetId);
+            const tbl = project.tables?.find(t => t.id === conn.targetId);
             if (tbl && tbl.columns?.some(c => c.name === conn.targetMember)) {
               targetHandle = conn.targetMember;
             }
