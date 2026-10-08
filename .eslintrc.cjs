@@ -11,13 +11,16 @@ module.exports = {
       './apps/vscode/tsconfig.json',
     ],
   },
-  plugins: ['react', 'react-hooks'],
+  plugins: ['react', 'react-hooks', 'simple-import-sort'],
   settings: {
     react: {
       version: 'detect',
     },
   },
   rules: {
+    // Import sorting
+    'simple-import-sort/imports': 'error',
+    'simple-import-sort/exports': 'error',
     // GTS noisy node rules off
     'n/no-extraneous-import': 'off',
     'n/no-unpublished-import': 'off',
@@ -27,4 +30,13 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
   },
+  overrides: [
+    {
+      files: ['plugins/**/*.js'],
+      rules: {
+        'n/no-process-exit': 'off',
+        'n/shebang': 'off',
+      },
+    },
+  ],
 };

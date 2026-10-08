@@ -1,12 +1,17 @@
 {
-  "files": ["vitest.config.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowJs": true
   },
+  "include": [
+    "vitest.config.ts",
+    "bump.config.ts",
+    "plugins/**/*.js"
+  ],
   "references": [
     { "path": "./packages/core" },
     { "path": "./apps/web" },

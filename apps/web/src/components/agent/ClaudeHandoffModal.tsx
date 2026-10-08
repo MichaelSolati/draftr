@@ -32,6 +32,12 @@ export const ClaudeHandoffModal: React.FC<ClaudeHandoffModalProps> = ({
     message: string;
   } | null>(null);
 
+  const port =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('port') ?? '4318'
+      : '4318';
+  const bridgeEndpoint = `http://localhost:${port}/api/claude/handoff`;
+
   if (!isOpen) return null;
 
   const promptContent = formatClipboardPrompt(project);
@@ -46,7 +52,7 @@ export const ClaudeHandoffModal: React.FC<ClaudeHandoffModalProps> = ({
     setSending(true);
     setBridgeResult(null);
     try {
-      const res = await sendHandoffToLocalBridge(project);
+      const res = await sendHandoffToLocalBridge(project, bridgeEndpoint);
       setBridgeResult(res);
     } catch (e) {
       setBridgeResult({
@@ -124,7 +130,7 @@ export const ClaudeHandoffModal: React.FC<ClaudeHandoffModalProps> = ({
         {/* Modal Footer */}
         <div className="flex items-center justify-between border-t border-border px-5 py-3 bg-muted/20">
           <span className="text-xs text-muted-foreground">
-            Local endpoint: <code>:4318/api/claude/handoff</code>
+            Local endpoint: <code>:{port}/api/claude/handoff</code>
           </span>
           <div className="flex items-center gap-2">
             <button
