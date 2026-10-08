@@ -166,4 +166,33 @@ state CartState
     expect(emitEdge?.sourceId).toBe('event-OrderPaid');
     expect(emitEdge?.targetId).toBe('entity-OrderService');
   });
+
+  it('parses word modifiers like public, private, protected, readonly, get, set', () => {
+    const text = `
+class ServiceWithModifiers
+  public execute(): void
+  private token: string
+  protected helper(): boolean
+  readonly version: string
+  get status(): string
+  set status(v: string): void
+`;
+    const result = parseOutline(text);
+    const cls = result.classes.find(c => c.name === 'ServiceWithModifiers');
+    expect(cls).toBeDefined();
+    expect(cls?.methods).toHaveLength(4);
+    expect(cls?.methods.find(m => m.name === 'execute')?.visibility).toBe(
+      'public'
+    );
+    expect(cls?.methods.find(m => m.name === 'helper')?.visibility).toBe(
+      'protected'
+    );
+    expect(cls?.properties).toHaveLength(2);
+    expect(cls?.properties.find(p => p.name === 'token')?.visibility).toBe(
+      'private'
+    );
+    expect(cls?.properties.find(p => p.name === 'version')?.visibility).toBe(
+      'public'
+    );
+  });
 });

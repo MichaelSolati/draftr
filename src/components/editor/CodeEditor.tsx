@@ -11,6 +11,7 @@ import {
   type AutocompleteItem,
 } from '../../lib/editor/codeEditorUtils';
 import {ReferencedChips} from './ReferencedChips';
+import {SyntaxHighlightOverlay} from './SyntaxHighlightOverlay';
 import {
   type ArchitectureProject,
   type ParserDiagnostic,
@@ -52,6 +53,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<AutocompleteItem[]>([]);
@@ -71,10 +73,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     return showReferencedChips ? extractReferencedItems(value, project) : [];
   }, [value, project, showReferencedChips]);
 
-  // Sync line numbers scrolling
+  // Sync line numbers and syntax overlay scrolling
   const handleScroll = () => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+    if (textareaRef.current) {
+      if (lineNumbersRef.current) {
+        lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+      }
+      if (overlayRef.current) {
+        overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+        overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
+      }
     }
   };
 
@@ -86,10 +94,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const updateSuggestions = useCallback(
     (currentVal: string, cursor: number) => {
       const tokenInfo = getActiveTokenInfo(currentVal, cursor);
+      const isIndentedLine =
+        tokenInfo.isLineStart &&
+        tokenInfo.line.trim() === '' &&
+        tokenInfo.line.length > 0;
+
       if (
         !tokenInfo.prefix &&
         !tokenInfo.isAfterArrowOrCall &&
-        !tokenInfo.isAfterColon
+        !tokenInfo.isAfterColon &&
+        !isIndentedLine
       ) {
         setShowAutocomplete(false);
         return;
@@ -232,20 +246,27 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       return;
     }
 
-    // 4b. Space Key: Force everything into tabs (no spaces; spaces are treated like tabs)
+    // 4b. Space Key: Only convert to a tab if user is indenting at the start of a line (empty prefix)
+    // Between words, spaces are preserved normally!
     if (e.key === ' ') {
-      e.preventDefault();
-      // Replace selection or cursor with a single Tab character
-      const newValue = value.substring(0, start) + '\t' + value.substring(end);
-      onChange(newValue);
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.selectionStart =
-            textareaRef.current.selectionEnd = start + 1;
-          updateSuggestions(newValue, start + 1);
-        }
-      }, 0);
-      return;
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      const linePrefix = value.substring(lineStart, start);
+      if (linePrefix.trim() === '') {
+        // At the start of a line (indentation area): insert 1 tab character
+        e.preventDefault();
+        const newValue =
+          value.substring(0, start) + '\t' + value.substring(end);
+        onChange(newValue);
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart =
+              textareaRef.current.selectionEnd = start + 1;
+            updateSuggestions(newValue, start + 1);
+          }
+        }, 0);
+        return;
+      }
+      // Otherwise, let default space behavior work smoothly between words!
     }
 
     // 5. Enter Key: Smart Indentation
@@ -386,24 +407,33 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           </div>
         )}
 
-        {/* Text Area */}
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={e => {
-            onChange(e.target.value);
-            updateSuggestions(e.target.value, e.target.selectionStart);
-          }}
-          onKeyDown={handleKeyDown}
-          onKeyUp={handleKeyUp}
-          onClick={handleClick}
-          onScroll={handleScroll}
-          autoFocus={autoFocus}
-          rows={minRows}
-          spellCheck={false}
-          className="flex-1 resize-none bg-transparent text-foreground p-3 focus:outline-none leading-5 selection:bg-primary/20 overflow-y-auto whitespace-pre font-mono"
-          placeholder={placeholder}
-        />
+        {/* Text Area & Syntax Highlight Overlay Container */}
+        <div className="flex-1 relative overflow-hidden flex">
+          <div
+            ref={overlayRef}
+            className="absolute inset-0 pointer-events-none select-none overflow-hidden"
+          >
+            <SyntaxHighlightOverlay text={value} />
+          </div>
+
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={e => {
+              onChange(e.target.value);
+              updateSuggestions(e.target.value, e.target.selectionStart);
+            }}
+            onKeyDown={handleKeyDown}
+            onKeyUp={handleKeyUp}
+            onClick={handleClick}
+            onScroll={handleScroll}
+            autoFocus={autoFocus}
+            rows={minRows}
+            spellCheck={false}
+            className="flex-1 resize-none bg-transparent text-transparent caret-foreground p-3 focus:outline-none leading-5 selection:bg-primary/25 overflow-y-auto whitespace-pre font-mono z-10"
+            placeholder={placeholder}
+          />
+        </div>
 
         {/* Autocomplete Popup */}
         {showAutocomplete && suggestions.length > 0 && (

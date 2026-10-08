@@ -27,13 +27,19 @@ export interface ParseResult {
   diagnostics: ParserDiagnostic[];
 }
 
-function parseVisibility(char: string): Visibility {
-  switch (char) {
+function parseVisibility(token: string): Visibility {
+  switch (token.toLowerCase()) {
     case '-':
+    case 'private':
       return 'private';
     case '#':
+    case 'protected':
       return 'protected';
     case '+':
+    case 'public':
+    case 'readonly':
+    case 'get':
+    case 'set':
     default:
       return 'public';
   }
@@ -445,7 +451,9 @@ export function parseOutline(text: string): ParseResult {
       const currentClass = classes.find(c => c.id === parent.id);
       if (!currentClass) continue;
 
-      const memberMatch = trimmed.match(/^([+\-#])\s*(.*)$/);
+      const memberMatch = trimmed.match(
+        /^([+\-#]|(?:public|private|protected|readonly|get|set)\b)\s*(.*)$/i
+      );
       if (memberMatch) {
         const visibility = parseVisibility(memberMatch[1]);
         const memberContent = memberMatch[2].trim();

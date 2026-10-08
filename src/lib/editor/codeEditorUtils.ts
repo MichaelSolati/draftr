@@ -55,6 +55,12 @@ export const DSL_KEYWORDS = [
   {label: 'binds', detail: 'Bind service to UI component'},
   {label: 'calls', detail: 'Invoke method on service'},
   {label: 'emits', detail: 'Emit event message'},
+  {label: 'public', detail: 'Public member visibility'},
+  {label: 'private', detail: 'Private member visibility'},
+  {label: 'protected', detail: 'Protected member visibility'},
+  {label: 'readonly', detail: 'Readonly property modifier'},
+  {label: 'get', detail: 'Getter accessor'},
+  {label: 'set', detail: 'Setter accessor'},
   {label: 'pk', detail: 'Primary key modifier'},
   {label: 'fk', detail: 'Foreign key modifier'},
   {label: 'unique', detail: 'Unique column constraint'},
@@ -382,6 +388,7 @@ export function getActiveTokenInfo(
   const isAfterArrowOrCall = /(->|calls|-)[ \t]*[A-Za-z0-9_$.]*$/.test(line);
   const isAfterColon = /:[ \t]*[A-Za-z0-9_$.]*$/.test(line);
   const isSubBullet = /^[ \t]*(-|->|calls)[ \t]+/.test(line);
+  const isLineStart = /^[ \t]*[-+#A-Za-z0-9_$.]*$/.test(line);
 
   return {
     prefix,
@@ -390,6 +397,7 @@ export function getActiveTokenInfo(
     isAfterArrowOrCall,
     isAfterColon,
     isSubBullet,
+    isLineStart,
   };
 }
 
@@ -532,6 +540,40 @@ export function getAutocompleteSuggestions(
     });
 
     return suggestions.slice(0, 8);
+  }
+
+  // 2b. Line start suggestions (for members: +, -, #, public, private, protected, readonly)
+  if (tokenInfo.isLineStart) {
+    const memberModifiers = [
+      {label: '+ (public)', insertText: '+ ', detail: 'Public member'},
+      {label: '- (private)', insertText: '- ', detail: 'Private member'},
+      {label: '# (protected)', insertText: '# ', detail: 'Protected member'},
+      {label: 'public', insertText: 'public ', detail: 'Public modifier'},
+      {label: 'private', insertText: 'private ', detail: 'Private modifier'},
+      {
+        label: 'protected',
+        insertText: 'protected ',
+        detail: 'Protected modifier',
+      },
+      {label: 'readonly', insertText: 'readonly ', detail: 'Readonly property'},
+    ];
+
+    if (!prefix || prefix === '+' || prefix === '-' || prefix === '#') {
+      memberModifiers.forEach(m => {
+        if (
+          !prefix ||
+          m.label.startsWith(prefix) ||
+          m.insertText.startsWith(prefix)
+        ) {
+          suggestions.push({
+            label: m.label,
+            kind: 'keyword',
+            insertText: m.insertText,
+            detail: m.detail,
+          });
+        }
+      });
+    }
   }
 
   // 3. General Token Context
