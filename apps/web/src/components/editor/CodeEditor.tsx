@@ -31,6 +31,7 @@ export interface CodeEditorProps {
   minRows?: number;
   showLineNumbers?: boolean;
   showReferencedChips?: boolean;
+  showFooter?: boolean;
   autoFocus?: boolean;
   theme?: 'dark' | 'light';
   onSave?: () => void;
@@ -44,7 +45,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   onChange,
   project,
   showLineNumbers = true,
-  showReferencedChips = true,
+  showReferencedChips = false,
+  showFooter = false,
   autoFocus = false,
   theme: themeProp,
   onSave,
@@ -86,6 +88,26 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           },
         },
         {
+          key: 'Ctrl-Enter',
+          run: () => {
+            if (onSave) {
+              onSave();
+              return true;
+            }
+            return false;
+          },
+        },
+        {
+          key: 'Cmd-Enter',
+          run: () => {
+            if (onSave) {
+              onSave();
+              return true;
+            }
+            return false;
+          },
+        },
+        {
           key: 'Escape',
           run: () => {
             if (onCancel) {
@@ -110,7 +132,22 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   return (
     <div
-      className={`flex flex-col h-full bg-card rounded-md border border-border overflow-hidden ${className}`}
+      onKeyDownCapture={e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          if (onSave) {
+            e.preventDefault();
+            e.stopPropagation();
+            onSave();
+          }
+        } else if (e.key === 'Escape') {
+          if (onCancel) {
+            e.preventDefault();
+            e.stopPropagation();
+            onCancel();
+          }
+        }
+      }}
+      className={`flex flex-col h-full bg-transparent overflow-hidden ${className}`}
     >
       {/* Referenced Chips Bar */}
       {showReferencedChips && referencedItems.length > 0 && (
@@ -123,12 +160,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       )}
 
       {/* CodeMirror 6 Editor Container */}
-      <div className="flex-1 relative overflow-hidden flex flex-col bg-background/50">
+      <div className="flex-1 relative overflow-hidden flex flex-col bg-transparent">
         <CodeMirror
           value={value}
           height="100%"
-          theme={activeTheme}
-          className="h-full flex-1 overflow-auto font-mono text-xs"
+          theme="none"
+          className="h-full flex-1 overflow-auto font-mono text-xs bg-transparent"
           placeholder={placeholder}
           autoFocus={autoFocus}
           extensions={extensions}
@@ -153,16 +190,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         />
       </div>
 
-      {/* Editor Footer Status Bar */}
-      <div className="flex items-center justify-between px-3 py-1 bg-muted/40 border-t border-border/40 text-[10px] text-muted-foreground select-none shrink-0 font-mono">
-        <div>
-          {lineCount} {lineCount === 1 ? 'line' : 'lines'}
+      {/* Optional Editor Footer Status Bar */}
+      {showFooter && (
+        <div className="flex items-center justify-between px-3 py-1 bg-muted/40 border-t border-border/40 text-[10px] text-muted-foreground select-none shrink-0 font-mono">
+          <div>
+            {lineCount} {lineCount === 1 ? 'line' : 'lines'}
+          </div>
+          <div className="flex items-center gap-3">
+            <span>Tab: 2 Spaces</span>
+            <span>draftr</span>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span>Tab: 2 Spaces</span>
-          <span>draftr</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

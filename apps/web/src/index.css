@@ -58,3 +58,40 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* React Flow Attribution Watermark Styling */
+.react-flow__attribution {
+  background: hsl(var(--card) / 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 6px !important;
+  padding: 3px 8px !important;
+  margin: 8px !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.react-flow__attribution a {
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  letter-spacing: 0.01em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: color 0.15s ease !important;
+}
+
+.react-flow__attribution:hover {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--primary) / 0.4) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.react-flow__attribution:hover a,
+.react-flow__attribution a:hover {
+  color: hsl(var(--foreground)) !important;
+}
+

@@ -232,7 +232,20 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
 
       {/* Inline Shared CodeEditor Mode */}
       {isEditing ? (
-        <div className="p-2 bg-background font-mono text-[11px] space-y-1.5 nodrag overflow-visible relative">
+        <div
+          onKeyDownCapture={e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSaveEdit();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCancelEdit();
+            }
+          }}
+          className="p-2 bg-background font-mono text-[11px] space-y-1.5 nodrag overflow-visible relative"
+        >
           <div className="border border-primary/40 rounded overflow-visible relative">
             <CodeEditor
               value={editText}
@@ -240,6 +253,7 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
               project={spec.project}
               showLineNumbers={false}
               showReferencedChips={false}
+              showFooter={false}
               autoFocus={true}
               minRows={5}
               onSave={handleSaveEdit}

@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useMemo, useCallback, useRef} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {PanelLeftOpen} from 'lucide-react';
 import {ThemeProvider} from './components/theme/ThemeProvider';
 import {TopNav} from './components/layout/TopNav';
@@ -11,89 +11,57 @@ import {ClaudeHandoffModal} from './components/agent/ClaudeHandoffModal';
 import {ProjectModal} from './components/workspace/ProjectModal';
 import {CommandPalette} from './components/palette/CommandPalette';
 import {SyntaxDocPanel} from './components/layout/SyntaxDocPanel';
-import {
-  parseOutline,
-  lintArchitecture,
-  type ArchitectureProject,
-} from '@draftr/core';
-import {
-  getProject,
-  saveProject,
-  getActiveProjectId,
-  setActiveProjectId,
-} from './lib/storage/db';
-
-const DEFAULT_PROJECT_ID = 'default-project-1';
-
-const DEFAULT_OUTLINE = `// Logic Entities
-class AuthService
-  + token: string
-  + login(creds: Credentials): Session -> Database.query
-  - hashPassword(password: string): string
-
-class UserService
-  + getProfile(id: string): UserProfile
-  + sendWelcome(email: string): boolean
-
-class Database
-  + query(sql: string): QueryResult
-
-// Database Schema
-db Users
-  + id: uuid pk
-  + email: string unique
-  + teamId: uuid fk -> Teams.id
-  + createdAt: timestamp
-
-db Teams
-  + id: uuid pk
-  + name: string
-
-// API Endpoints
-api /api/v1/auth
-  + POST /login(LoginDTO): Session -> AuthService.login
-
-// Event Streaming
-event UserRegistered(UserEvent) -> UserService.sendWelcome
-
-// UI Hierarchy
-ui App
-  ui Header
-    binds AuthService
-  ui Dashboard
-    ui MetricsWidget
-`;
+import {useProjectStore} from './lib/store/useProjectStore';
+import {type ArchitectureProject} from '@draftr/core';
+import {saveProject} from './lib/storage/db';
 
 export const AppContent: React.FC = () => {
-  const [project, setProject] = useState<ArchitectureProject>({
-    id: DEFAULT_PROJECT_ID,
-    name: 'draftr specification',
-    rawOutlineText: DEFAULT_OUTLINE,
-    classes: [],
-    uiComponents: [],
-    tables: [],
-    apiRoutes: [],
-    events: [],
-    states: [],
-    connections: [],
-    updatedAt: Date.now(),
-    createdAt: Date.now(),
-  });
+  const {
+    project,
+    diagnostics,
+    architectureIssues,
+    selectedEntityId,
+    loadProject,
+    setText,
+    insertSnippet,
+    updateEntityText,
+    connectWire,
+    importCode,
+    setNodePosition,
+    setNodePositions,
+    setSelectedEntityId,
+    isEditorMinimized,
+    setIsEditorMinimized,
+    isSyntaxDocsOpen,
+    setIsSyntaxDocsOpen,
+    isPaletteOpen,
+    setIsPaletteOpen,
+    isExportOpen,
+    setIsExportOpen,
+    isImportOpen,
+    setIsImportOpen,
+    isScaffoldOpen,
+    setIsScaffoldOpen,
+    isClaudeOpen,
+    setIsClaudeOpen,
+    isProjectOpen,
+    setIsProjectOpen,
+  } = useProjectStore();
 
-  const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isScaffoldOpen, setIsScaffoldOpen] = useState(false);
-  const [isClaudeOpen, setIsClaudeOpen] = useState(false);
-  const [isProjectOpen, setIsProjectOpen] = useState(false);
-  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
-  const [isEditorMinimized, setIsEditorMinimized] = useState(false);
-  const [isSyntaxDocsOpen, setIsSyntaxDocsOpen] = useState(false);
-  const [nodePositions, setNodePositions] = useState<
-    Record<string, {x: number; y: number}>
-  >({});
+  // Load project on mount and on hashchange
+  useEffect(() => {
+    loadProject();
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleHashChange = () => {
+      loadProject();
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
+  }, [loadProject]);
 
   // Global keydown for Cmd+K / Ctrl+K
   useEffect(() => {
@@ -105,365 +73,11 @@ export const AppContent: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Helper to sync URL hash with project ID
-  const updateUrlProject = useCallback((id: string) => {
-    if (window.location.hash !== `#/${id}`) {
-      window.history.pushState(null, '', `#/${id}`);
-    }
-  }, []);
-
-  // Read project ID from URL hash or storage on mount and hashchange
-  useEffect(() => {
-    async function loadFromHashOrStorage() {
-      const hash = window.location.hash.replace(/^#\/?/, '').trim();
-      const activeId = await getActiveProjectId();
-      const targetId = hash || activeId || DEFAULT_PROJECT_ID;
-
-      const loaded = await getProject(targetId);
-      if (loaded) {
-        await setActiveProjectId(loaded.id);
-        updateUrlProject(loaded.id);
-        setProject(loaded);
-      } else {
-        const initialParsed = parseOutline(DEFAULT_OUTLINE);
-        const projectId =
-          hash ||
-          (typeof crypto !== 'undefined' && crypto.randomUUID
-            ? crypto.randomUUID()
-            : DEFAULT_PROJECT_ID);
-        const initialProject: ArchitectureProject = {
-          id: projectId,
-          name: 'draftr specification',
-          rawOutlineText: DEFAULT_OUTLINE,
-          classes: initialParsed.classes,
-          uiComponents: initialParsed.uiComponents,
-          tables: initialParsed.tables,
-          apiRoutes: initialParsed.apiRoutes,
-          events: initialParsed.events,
-          states: initialParsed.states,
-          connections: initialParsed.connections,
-          updatedAt: Date.now(),
-          createdAt: Date.now(),
-        };
-        await saveProject(initialProject);
-        await setActiveProjectId(projectId);
-        updateUrlProject(projectId);
-        setProject(initialProject);
-      }
-    }
-
-    loadFromHashOrStorage();
-
-    const handleHashChange = () => {
-      loadFromHashOrStorage();
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    window.addEventListener('popstate', handleHashChange);
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-      window.removeEventListener('popstate', handleHashChange);
-    };
-  }, [updateUrlProject]);
-
-  // Parse text whenever outline changes
-  const parseResult = useMemo(() => {
-    return parseOutline(project.rawOutlineText);
-  }, [project.rawOutlineText]);
-
-  // Merge parsed AST with existing node positions
-  const currentProjectWithPositions = useMemo(() => {
-    const updatedClasses = parseResult.classes.map(cls => ({
-      ...cls,
-      position: nodePositions[cls.id] || cls.position,
-    }));
-    const updatedUIs = parseResult.uiComponents.map(ui => ({
-      ...ui,
-      position: nodePositions[ui.id] || ui.position,
-    }));
-    const updatedTables = parseResult.tables.map(tbl => ({
-      ...tbl,
-      position: nodePositions[tbl.id] || tbl.position,
-    }));
-    const updatedApis = parseResult.apiRoutes.map(api => ({
-      ...api,
-      position: nodePositions[api.id] || api.position,
-    }));
-    const updatedEvents = parseResult.events.map(ev => ({
-      ...ev,
-      position: nodePositions[ev.id] || ev.position,
-    }));
-    const updatedStates = parseResult.states.map(st => ({
-      ...st,
-      position: nodePositions[st.id] || st.position,
-    }));
-
-    return {
-      ...project,
-      classes: updatedClasses,
-      uiComponents: updatedUIs,
-      tables: updatedTables,
-      apiRoutes: updatedApis,
-      events: updatedEvents,
-      states: updatedStates,
-      connections: parseResult.connections,
-      updatedAt: Date.now(),
-    };
-  }, [project, parseResult, nodePositions]);
-
-  // Lint project architecture
-  const architectureIssues = useMemo(() => {
-    return lintArchitecture(currentProjectWithPositions);
-  }, [currentProjectWithPositions]);
-
-  // Debounced autosave
-  const triggerAutosave = useCallback((updatedProject: ArchitectureProject) => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      await saveProject(updatedProject);
-    }, 400);
-  }, []);
-
-  const handleTextChange = (newText: string) => {
-    setProject(prev => {
-      const next = {...prev, rawOutlineText: newText, updatedAt: Date.now()};
-      triggerAutosave(next);
-      return next;
-    });
-  };
-
-  const handleInsertSnippet = (snippet: string) => {
-    setProject(prev => {
-      const trimmed = prev.rawOutlineText.trimEnd();
-      const nextText = `${trimmed}\n${snippet}`;
-      const next = {...prev, rawOutlineText: nextText, updatedAt: Date.now()};
-      triggerAutosave(next);
-      return next;
-    });
-  };
-
-  const handleImportCode = (dslText: string, mode: 'append' | 'replace') => {
-    setProject(prev => {
-      const nextText =
-        mode === 'replace'
-          ? dslText
-          : `${prev.rawOutlineText.trimEnd()}\n\n// Ingested Codebase\n${dslText}`;
-      const next = {...prev, rawOutlineText: nextText, updatedAt: Date.now()};
-      triggerAutosave(next);
-      return next;
-    });
-  };
-
-  const handleNodeDragStop = (id: string, position: {x: number; y: number}) => {
-    setNodePositions(prev => ({...prev, [id]: position}));
-  };
-
-  const handleUpdateEntityText = (entityName: string, newSnippet: string) => {
-    const lines = project.rawOutlineText.split('\n');
-    let startIdx = -1;
-    let endIdx = -1;
-    let baseIndent = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
-      const indent = line.search(/\S/);
-
-      const declMatch = trimmed.match(
-        /^(class|type|interface|ui|db|api|event|state)\s+([A-Za-z0-9_$/]+)/
-      );
-      if (declMatch && declMatch[2] === entityName) {
-        startIdx = i;
-        baseIndent = indent;
-        continue;
-      }
-
-      if (startIdx !== -1 && endIdx === -1) {
-        if (trimmed === '') {
-          continue;
-        }
-        if (indent <= baseIndent) {
-          endIdx = i;
-          break;
-        }
-      }
-    }
-
-    if (startIdx !== -1) {
-      if (endIdx === -1) endIdx = lines.length;
-      const before = lines.slice(0, startIdx);
-      const after = lines.slice(endIdx);
-      const updatedText = [...before, newSnippet, ...after].join('\n');
-      handleTextChange(updatedText);
-    }
-  };
-
-  // Bi-directional sync: dragging wires adds calls on a new third indentation line or entity-level connections
-  const handleConnectWire = (
-    sourceEntity: string,
-    sourceMember: string | null,
-    targetEntity: string,
-    targetMember: string | null
-  ) => {
-    const lines = project.rawOutlineText.split('\n');
-
-    // Case 1: Member-level wire (Method or Property to Member or Entity)
-    if (sourceMember) {
-      let insideSourceClass = false;
-      let methodIdx = -1;
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmed = line.trim();
-        const classMatch = trimmed.match(/^class\s+([A-Za-z0-9_$]+)/);
-
-        if (classMatch) {
-          insideSourceClass = classMatch[1] === sourceEntity;
-          continue;
-        }
-
-        if (
-          insideSourceClass &&
-          /^(class|ui|db|api|event|state|interface|type)\s+/.test(trimmed) &&
-          !line.startsWith(' ') &&
-          !line.startsWith('\t')
-        ) {
-          insideSourceClass = false;
-        }
-
-        if (insideSourceClass) {
-          const methodRegex = new RegExp(
-            `^(?:[+\\-#]|(?:public|private|protected|readonly|get|set)\\b)?\\s*${sourceMember}\\s*\\(`,
-            'i'
-          );
-          if (methodRegex.test(trimmed)) {
-            methodIdx = i;
-            break;
-          }
-        }
-      }
-
-      if (methodIdx !== -1) {
-        const methodLine = lines[methodIdx];
-        const matchIndent = methodLine.match(/^(\s*)/);
-        const methodIndent = matchIndent ? matchIndent[1] : '  ';
-        const callIndent = methodIndent.includes('\t')
-          ? methodIndent + '\t'
-          : methodIndent + (methodIndent || '  ');
-
-        // Clean any existing inline arrow/calls on the method declaration itself
-        let cleanMethodLine = methodLine;
-        const arrowIndex = methodLine.indexOf('->');
-        const callsIndex = methodLine.search(/\b(?:calls|invokes)\b/i);
-        if (arrowIndex !== -1) {
-          cleanMethodLine = methodLine.slice(0, arrowIndex).trimEnd();
-        } else if (callsIndex !== -1) {
-          cleanMethodLine = methodLine.slice(0, callsIndex).trimEnd();
-        }
-
-        // Resolve target method vs property
-        const targetClassSpec =
-          parseResult.classes.find(c => c.name === targetEntity) ||
-          project.classes?.find(c => c.name === targetEntity);
-        const isMethod =
-          targetMember &&
-          targetClassSpec?.methods?.some(m => m.name === targetMember);
-        const targetMemberSuffix = targetMember
-          ? `.${targetMember}${isMethod ? '()' : ''}`
-          : '';
-        const callTarget = `${targetEntity}${targetMemberSuffix}`;
-        const callLine = `${callIndent}calls ${callTarget}`;
-
-        // Find insertion point (after any existing calls of this method)
-        let insertAt = methodIdx + 1;
-        let alreadyExists = false;
-        while (insertAt < lines.length) {
-          const nextTrimmed = lines[insertAt].trim();
-          if (
-            nextTrimmed.startsWith('calls ') ||
-            nextTrimmed.startsWith('invokes ') ||
-            nextTrimmed.startsWith('->') ||
-            nextTrimmed.startsWith('- ') ||
-            nextTrimmed.startsWith('+ ')
-          ) {
-            if (
-              nextTrimmed.includes(targetEntity) &&
-              (!targetMember || nextTrimmed.includes(targetMember))
-            ) {
-              alreadyExists = true;
-              break;
-            }
-            insertAt++;
-          } else {
-            break;
-          }
-        }
-
-        if (!alreadyExists) {
-          lines[methodIdx] = cleanMethodLine;
-          lines.splice(insertAt, 0, callLine);
-          handleTextChange(lines.join('\n'));
-        }
-        return;
-      }
-    }
-
-    // Case 2: Node-level wire (Class to Class / Service, or UI to Class)
-    let insideSource = false;
-    let insertIndex = -1;
-    let isUI = false;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
-      const entityMatch = trimmed.match(
-        /^(class|ui|interface|type)\s+([A-Za-z0-9_$]+)/
-      );
-      if (entityMatch) {
-        if (insideSource && insertIndex === -1) {
-          insertIndex = i;
-        }
-        if (entityMatch[2] === sourceEntity) {
-          insideSource = true;
-          isUI = entityMatch[1] === 'ui';
-        } else {
-          insideSource = false;
-        }
-      }
-    }
-
-    if (insideSource && insertIndex === -1) {
-      insertIndex = lines.length;
-    }
-
-    if (insertIndex !== -1) {
-      const prevLine = lines[insertIndex - 1] || '';
-      const prevIndentMatch = prevLine.match(/^(\s+)/);
-      const level2Indent = prevIndentMatch ? prevIndentMatch[1] : '  ';
-
-      const directive = isUI
-        ? `${level2Indent}binds ${targetEntity}`
-        : `${level2Indent}calls ${targetEntity}${targetMember ? '.' + targetMember : ''}`;
-      const alreadyExists = lines
-        .slice(0, insertIndex)
-        .some(l => l.trim() === directive.trim());
-      if (!alreadyExists) {
-        lines.splice(insertIndex, 0, directive);
-        handleTextChange(lines.join('\n'));
-      }
-    }
-  };
+  }, [setIsPaletteOpen]);
 
   const handleSelectProject = async (id: string) => {
-    const loaded = await getProject(id);
-    if (loaded) {
-      await setActiveProjectId(id);
-      updateUrlProject(id);
-      setProject(loaded);
-      setNodePositions({});
-      setSelectedEntityId(null);
-    }
+    await loadProject(id);
+    setSelectedEntityId(null);
   };
 
   const handleCreateProject = async (name: string) => {
@@ -483,20 +97,18 @@ export const AppContent: React.FC = () => {
       events: [],
       states: [],
       connections: [],
+      nodePositions: {},
       updatedAt: Date.now(),
       createdAt: Date.now(),
     };
     await saveProject(newProj);
-    await setActiveProjectId(id);
-    updateUrlProject(id);
-    setProject(newProj);
-    setNodePositions({});
+    await loadProject(id);
     setSelectedEntityId(null);
   };
 
   // Combine parser diagnostics with architectural lint warnings
   const combinedDiagnostics = useMemo(() => {
-    const diags = [...parseResult.diagnostics];
+    const diags = [...diagnostics];
     architectureIssues.forEach(issue => {
       diags.push({
         line: 1,
@@ -505,7 +117,7 @@ export const AppContent: React.FC = () => {
       });
     });
     return diags;
-  }, [parseResult.diagnostics, architectureIssues]);
+  }, [diagnostics, architectureIssues]);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -541,18 +153,18 @@ export const AppContent: React.FC = () => {
           <div className="w-[42%] min-w-[320px] max-w-[600px] h-full shrink-0 transition-all duration-300">
             <QuickTextEditor
               value={project.rawOutlineText}
-              onChange={handleTextChange}
-              project={currentProjectWithPositions}
+              onChange={setText}
+              project={project}
               diagnostics={combinedDiagnostics}
-              onInsertSnippet={handleInsertSnippet}
+              onInsertSnippet={insertSnippet}
               highlightedEntity={selectedEntityId}
               onSelectEntity={setSelectedEntityId}
               isMinimized={isEditorMinimized}
               onToggleMinimize={() => setIsEditorMinimized(true)}
               entityCount={{
-                classes: parseResult.classes.length,
-                ui: parseResult.uiComponents.length,
-                connections: parseResult.connections.length,
+                classes: project.classes.length,
+                ui: project.uiComponents.length,
+                connections: project.connections.length,
               }}
             />
           </div>
@@ -561,12 +173,13 @@ export const AppContent: React.FC = () => {
         {/* Center / Right: Architecture Visual Canvas */}
         <div className="flex-1 h-full overflow-hidden">
           <ArchitectureCanvas
-            project={currentProjectWithPositions}
-            onConnectWire={handleConnectWire}
-            onNodeDragStop={handleNodeDragStop}
+            project={project}
+            onConnectWire={connectWire}
+            onNodeDragStop={setNodePosition}
+            onAutoLayout={setNodePositions}
             onSelectEntity={setSelectedEntityId}
-            onUpdateEntityText={handleUpdateEntityText}
-            onInsertSnippet={handleInsertSnippet}
+            onUpdateEntityText={updateEntityText}
+            onInsertSnippet={insertSnippet}
             selectedEntityId={selectedEntityId}
           />
         </div>
@@ -575,13 +188,13 @@ export const AppContent: React.FC = () => {
         <SyntaxDocPanel
           isOpen={isSyntaxDocsOpen}
           onClose={() => setIsSyntaxDocsOpen(false)}
-          onInsertSnippet={handleInsertSnippet}
+          onInsertSnippet={insertSnippet}
         />
       </div>
 
       {/* Modals & Command Palette */}
       <ExportModal
-        project={currentProjectWithPositions}
+        project={project}
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
       />
@@ -589,17 +202,17 @@ export const AppContent: React.FC = () => {
       <ImportModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
-        onImport={handleImportCode}
+        onImport={importCode}
       />
 
       <ScaffoldModal
-        project={currentProjectWithPositions}
+        project={project}
         isOpen={isScaffoldOpen}
         onClose={() => setIsScaffoldOpen(false)}
       />
 
       <ClaudeHandoffModal
-        project={currentProjectWithPositions}
+        project={project}
         isOpen={isClaudeOpen}
         onClose={() => setIsClaudeOpen(false)}
       />
@@ -615,7 +228,7 @@ export const AppContent: React.FC = () => {
       <CommandPalette
         isOpen={isPaletteOpen}
         onClose={() => setIsPaletteOpen(false)}
-        onInsertSnippet={handleInsertSnippet}
+        onInsertSnippet={insertSnippet}
         onOpenExport={() => setIsExportOpen(true)}
         onOpenClaude={() => setIsClaudeOpen(true)}
         onOpenProjects={() => setIsProjectOpen(true)}

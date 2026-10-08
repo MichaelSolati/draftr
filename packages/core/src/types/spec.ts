@@ -135,6 +135,7 @@ export interface ArchitectureProject {
   events?: EventSpec[];
   states?: StateSpec[];
   connections: ConnectionEdge[];
+  nodePositions?: Record<string, {x: number; y: number}>;
   updatedAt: number;
   createdAt: number;
 }

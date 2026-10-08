@@ -359,16 +359,20 @@ export function getDraftrEditorTheme(mode: 'dark' | 'light' = 'dark') {
         fontSize: '12px',
         fontFamily:
           'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        backgroundColor: 'transparent',
-        color: isDark ? '#f1f5f9' : '#0f172a',
+        backgroundColor: 'transparent !important',
+        color: isDark ? '#f8fafc' : '#020617',
+      },
+      '.cm-scroller': {
+        backgroundColor: 'transparent !important',
+        fontFamily: 'inherit',
       },
       '.cm-content': {
-        caretColor: isDark ? '#f8fafc' : '#0f172a',
+        caretColor: isDark ? '#f8fafc' : '#020617',
         lineHeight: '20px',
         padding: '12px 8px',
       },
       '.cm-cursor': {
-        borderLeftColor: isDark ? '#f8fafc' : '#0f172a',
+        borderLeftColor: isDark ? '#f8fafc' : '#020617',
         borderLeftWidth: '2px',
       },
       '&.cm-focused .cm-selectionBackground, ::selection': {
@@ -377,10 +381,8 @@ export function getDraftrEditorTheme(mode: 'dark' | 'light' = 'dark') {
           : 'rgba(59, 130, 246, 0.2) !important',
       },
       '.cm-gutters': {
-        backgroundColor: isDark
-          ? 'rgba(255, 255, 255, 0.03)'
-          : 'rgba(0, 0, 0, 0.03)',
-        color: isDark ? '#64748b' : '#94a3b8',
+        backgroundColor: 'transparent !important',
+        color: isDark ? '#94a3b8' : '#64748b',
         borderRight: isDark
           ? '1px solid rgba(255, 255, 255, 0.08)'
           : '1px solid rgba(0, 0, 0, 0.08)',
@@ -392,23 +394,23 @@ export function getDraftrEditorTheme(mode: 'dark' | 'light' = 'dark') {
       },
       '.cm-activeLine': {
         backgroundColor: isDark
-          ? 'rgba(255, 255, 255, 0.05)'
-          : 'rgba(0, 0, 0, 0.04)',
+          ? 'rgba(255, 255, 255, 0.04)'
+          : 'rgba(0, 0, 0, 0.03)',
       },
       '.cm-activeLineGutter': {
         backgroundColor: isDark
-          ? 'rgba(255, 255, 255, 0.08)'
-          : 'rgba(0, 0, 0, 0.06)',
-        color: isDark ? '#f8fafc' : '#0f172a',
+          ? 'rgba(255, 255, 255, 0.06)'
+          : 'rgba(0, 0, 0, 0.05)',
+        color: isDark ? '#f8fafc' : '#020617',
         fontWeight: 'bold',
       },
       '.cm-tooltip-autocomplete': {
-        backgroundColor: isDark ? '#1e293b' : '#ffffff',
-        border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+        backgroundColor: isDark ? '#020817' : '#ffffff',
+        border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
         borderRadius: '6px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
         padding: '4px',
-        color: isDark ? '#f1f5f9' : '#0f172a',
+        color: isDark ? '#f8fafc' : '#020617',
       },
       '.cm-tooltip-autocomplete ul li': {
         borderRadius: '4px',
@@ -418,7 +420,7 @@ export function getDraftrEditorTheme(mode: 'dark' | 'light' = 'dark') {
         backgroundColor: isDark
           ? 'rgba(168, 85, 247, 0.25)'
           : 'rgba(59, 130, 246, 0.15)',
-        color: isDark ? '#ffffff' : '#0f172a',
+        color: isDark ? '#ffffff' : '#020617',
       },
     },
     {dark: isDark}

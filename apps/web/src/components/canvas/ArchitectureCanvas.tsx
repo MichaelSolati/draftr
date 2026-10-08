@@ -24,9 +24,12 @@ import {
   Zap,
   Layout,
   Layers,
+  Sparkles,
 } from 'lucide-react';
+import {computeAutoLayout, type LayoutDirection} from './layout';
 import {ClassNode} from './nodes/ClassNode';
 import {UINode} from './nodes/UINode';
+import {useTheme} from '../theme/ThemeProvider';
 import {TableNode} from './nodes/TableNode';
 import {ApiNode} from './nodes/ApiNode';
 import {EventNode} from './nodes/EventNode';
@@ -52,6 +55,7 @@ interface ArchitectureCanvasProps {
     targetMember: string | null
   ) => void;
   onNodeDragStop?: (id: string, position: {x: number; y: number}) => void;
+  onAutoLayout?: (positions: Record<string, {x: number; y: number}>) => void;
   onSelectEntity?: (entityId: string | null) => void;
   onUpdateEntityText?: (entityName: string, newSnippet: string) => void;
   onInsertSnippet?: (snippet: string) => void;
@@ -69,6 +73,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
   project,
   onConnectWire,
   onNodeDragStop,
+  onAutoLayout,
   onSelectEntity,
   onUpdateEntityText,
   onInsertSnippet,
@@ -81,6 +86,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
   );
   const [isAllSelected, setIsAllSelected] = useState(true);
   const {fitView, setCenter, screenToFlowPosition} = useReactFlow();
+  const {resolvedTheme} = useTheme();
 
   const isDomainVisible = useCallback(
     (domain: DomainType) => {
@@ -420,6 +426,19 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     }
   }, [selectedEntityId, nodes, setCenter, fitView]);
 
+  const handleAutoLayout = useCallback(
+    (direction: LayoutDirection = 'TB') => {
+      const layouted = computeAutoLayout(nodes, edges, {direction});
+      if (onAutoLayout) {
+        onAutoLayout(layouted);
+      }
+      setTimeout(() => {
+        fitView({padding: 0.2, duration: 600});
+      }, 50);
+    },
+    [nodes, edges, onAutoLayout, fitView]
+  );
+
   const filters: Array<{key: DomainType | 'all'; label: string}> = [
     {key: 'all', label: 'All'},
     {key: 'logic', label: 'Logic'},
@@ -504,8 +523,17 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         })}
       </div>
 
-      {/* Floating Canvas Controls: Center to Content & Focus Selected */}
+      {/* Floating Canvas Controls: Auto Layout, Center to Content & Focus Selected */}
       <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-card/90 backdrop-blur-md border border-border rounded-lg p-1 shadow-md">
+        <button
+          type="button"
+          onClick={() => handleAutoLayout('TB')}
+          title="Auto-organize layout (Hierarchical)"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md text-foreground hover:bg-accent transition-colors"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <span>Auto Layout</span>
+        </button>
         <button
           type="button"
           onClick={handleCenterContent}
@@ -532,6 +560,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        colorMode={resolvedTheme}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
