@@ -5,10 +5,10 @@ import {
   type ClassSpec,
   type Visibility,
   type ArchitectureProject,
-} from '@arch-spec/core';
+} from '@draftr/core';
 import {CodeEditor} from '../../editor/CodeEditor';
 import {ReferencedChips} from '../../editor/ReferencedChips';
-import {extractReferencedItems} from '@arch-spec/core';
+import {extractReferencedItems} from '@draftr/core';
 
 function renderVisibilityIcon(visibility: Visibility) {
   switch (visibility) {

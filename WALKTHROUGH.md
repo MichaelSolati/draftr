@@ -1,6 +1,6 @@
-# Walkthrough: Visual & Textual Architecture Spec Builder
+# Walkthrough: draftr — Visual & Textual Architecture Spec Builder
 
-We have built, verified, and committed **Phase 1 (Core Dual-Engine Architecture)** and **Phase 2 (Expanded Multi-Domain Modeling)** in [`arch-spec-builder`](file:///home/michaelsolati/workspace/arch-spec-builder), adhering strictly to the PRD specifications, the ERD data model, and the **Repo Standards Stack**.
+We have built, verified, and committed **Phase 1 (Core Dual-Engine Architecture)** and **Phase 2 (Expanded Multi-Domain Modeling)** in `draftr`, adhering strictly to the PRD specifications, the ERD data model, and the **Repo Standards Stack**.
 
 ---
 

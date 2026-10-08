@@ -8,7 +8,7 @@ import {
   Layers,
   ArrowUpRight,
 } from 'lucide-react';
-import {type ReferencedItem} from '@arch-spec/core';
+import {type ReferencedItem} from '@draftr/core';
 
 interface ReferencedChipsProps {
   items: ReferencedItem[];

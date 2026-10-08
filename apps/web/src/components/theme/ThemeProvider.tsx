@@ -25,7 +25,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
-  storageKey = 'arch-spec-builder-theme',
+  storageKey = 'draftr-theme',
 }: ThemeProviderProps): React.ReactElement {
   const [theme, setThemeState] = useState<Theme>(() => {
     return (localStorage.getItem(storageKey) as Theme) || defaultTheme;

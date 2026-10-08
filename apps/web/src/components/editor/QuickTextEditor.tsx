@@ -11,7 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import {type ArchitectureProject, type ParserDiagnostic} from '@arch-spec/core';
+import {type ArchitectureProject, type ParserDiagnostic} from '@draftr/core';
 import {CodeEditor} from './CodeEditor';
 
 interface QuickTextEditorProps {

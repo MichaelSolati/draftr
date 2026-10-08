@@ -1,7 +1,7 @@
 import React, {useState, useMemo} from 'react';
 import {X, FileCode, Copy, Check, Download, Layers} from 'lucide-react';
-import {type ArchitectureProject} from '@arch-spec/core';
-import {generateProjectFiles, type GeneratedFile} from '@arch-spec/core';
+import {type ArchitectureProject} from '@draftr/core';
+import {generateProjectFiles, type GeneratedFile} from '@draftr/core';
 
 interface ScaffoldModalProps {
   project: ArchitectureProject;

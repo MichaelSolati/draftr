@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "ArchSpec",
-  "scopeName": "source.archspec",
+  "name": "draftr",
+  "scopeName": "source.draftr",
   "patterns": [
     {
       "include": "#comments"
@@ -38,7 +38,7 @@
     "comments": {
       "patterns": [
         {
-          "name": "comment.line.double-slash.archspec",
+          "name": "comment.line.double-slash.draftr",
           "match": "//.*$"
         }
       ]
@@ -48,8 +48,8 @@
         {
           "match": "\\b(abstract\\s+class|class|interface|type|ui|db|api|event|state)\\s+([A-Za-z0-9_$/]+)",
           "captures": {
-            "1": { "name": "keyword.control.declaration.archspec" },
-            "2": { "name": "entity.name.type.class.archspec" }
+            "1": { "name": "keyword.control.declaration.draftr" },
+            "2": { "name": "entity.name.type.class.draftr" }
           }
         }
       ]
@@ -58,7 +58,7 @@
       "patterns": [
         {
           "match": "\\b(extends|implements)\\b",
-          "name": "keyword.control.inheritance.archspec"
+          "name": "keyword.control.inheritance.draftr"
         }
       ]
     },
@@ -66,12 +66,12 @@
       "patterns": [
         {
           "match": "\\b(public|private|protected|readonly|get|set|override)\\b",
-          "name": "storage.modifier.archspec"
+          "name": "storage.modifier.draftr"
         },
         {
           "match": "^\\s*([+\\-#])(?=\\s*[A-Za-z0-9_$])",
           "captures": {
-            "1": { "name": "storage.modifier.symbol.archspec" }
+            "1": { "name": "storage.modifier.symbol.draftr" }
           }
         }
       ]
@@ -80,11 +80,11 @@
       "patterns": [
         {
           "match": "\\b(binds|calls|invokes)\\b",
-          "name": "keyword.operator.action.archspec"
+          "name": "keyword.operator.action.draftr"
         },
         {
           "match": "->",
-          "name": "keyword.operator.arrow.archspec"
+          "name": "keyword.operator.arrow.draftr"
         }
       ]
     },
@@ -92,7 +92,7 @@
       "patterns": [
         {
           "match": "\\b(GET|POST|PUT|DELETE|PATCH)\\b",
-          "name": "keyword.other.http.archspec"
+          "name": "keyword.other.http.draftr"
         }
       ]
     },
@@ -100,7 +100,7 @@
       "patterns": [
         {
           "match": "\\b(pk|fk|unique)\\b",
-          "name": "storage.modifier.database.archspec"
+          "name": "storage.modifier.database.draftr"
         }
       ]
     },
@@ -108,12 +108,12 @@
       "patterns": [
         {
           "match": "\\b(string|number|boolean|any|void|never|unknown|uuid|text|int|serial|timestamp|jsonb)\\b",
-          "name": "support.type.primitive.archspec"
+          "name": "support.type.primitive.draftr"
         },
         {
           "match": "(?<=:\\s*)([A-Z][A-Za-z0-9_$]*(?:\\.[A-Za-z0-9_$]+)?)",
           "captures": {
-            "1": { "name": "entity.name.type.custom.archspec" }
+            "1": { "name": "entity.name.type.custom.draftr" }
           }
         }
       ]
@@ -123,7 +123,7 @@
         {
           "match": "([A-Za-z0-9_$]+)\\s*\\(",
           "captures": {
-            "1": { "name": "entity.name.function.archspec" }
+            "1": { "name": "entity.name.function.draftr" }
           }
         }
       ]
@@ -133,7 +133,7 @@
         {
           "match": "([A-Za-z0-9_$]+)(?=\\s*:)",
           "captures": {
-            "1": { "name": "variable.other.property.archspec" }
+            "1": { "name": "variable.other.property.draftr" }
           }
         }
       ]

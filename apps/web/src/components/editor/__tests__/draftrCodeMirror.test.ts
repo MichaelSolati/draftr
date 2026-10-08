@@ -3,46 +3,46 @@ import {EditorState} from '@codemirror/state';
 import {CompletionContext} from '@codemirror/autocomplete';
 import {StringStream} from '@codemirror/language';
 import {
-  computeArchSpecIndent,
-  createArchSpecCompletions,
-  archSpecStreamLanguage,
-  archSpecStreamParser,
-  handleArchSpecShortcut,
-  archSpecShortcuts,
-  getArchSpecHighlightStyle,
-  getArchSpecEditorTheme,
-} from '../archSpecCodeMirror';
-import type {ArchitectureProject} from '@arch-spec/core';
+  computeDraftrIndent,
+  createDraftrCompletions,
+  draftrStreamLanguage,
+  draftrStreamParser,
+  handleDraftrShortcut,
+  draftrShortcuts,
+  getDraftrHighlightStyle,
+  getDraftrEditorTheme,
+} from '../draftrCodeMirror';
+import type {ArchitectureProject} from '@draftr/core';
 
-describe('archSpecCodeMirror extensions', () => {
+describe('draftrCodeMirror extensions', () => {
   describe('indentation computation', () => {
     it('indents 2 spaces after class definition', () => {
-      const indent = computeArchSpecIndent('class AuthService');
+      const indent = computeDraftrIndent('class AuthService');
       expect(indent).toBe(2);
     });
 
     it('indents 2 spaces after abstract class definition', () => {
-      const indent = computeArchSpecIndent('abstract class BaseService');
+      const indent = computeDraftrIndent('abstract class BaseService');
       expect(indent).toBe(2);
     });
 
     it('indents 2 spaces after ui block', () => {
-      const indent = computeArchSpecIndent('ui Dashboard');
+      const indent = computeDraftrIndent('ui Dashboard');
       expect(indent).toBe(2);
     });
 
     it('indents 4 spaces after a method definition (for calls)', () => {
-      const indent = computeArchSpecIndent('  public login(): string');
+      const indent = computeDraftrIndent('  public login(): string');
       expect(indent).toBe(4);
     });
 
     it('preserves 4 spaces after a calls line', () => {
-      const indent = computeArchSpecIndent('    calls UserRepo');
+      const indent = computeDraftrIndent('    calls UserRepo');
       expect(indent).toBe(4);
     });
 
     it('uses 0 spaces at root level on empty line', () => {
-      const indent = computeArchSpecIndent('');
+      const indent = computeDraftrIndent('');
       expect(indent).toBe(0);
     });
   });
@@ -68,7 +68,7 @@ describe('archSpecCodeMirror extensions', () => {
     };
 
     it('returns keywords and entity completions', () => {
-      const completionSource = createArchSpecCompletions(mockProject);
+      const completionSource = createDraftrCompletions(mockProject);
       const state = EditorState.create({
         doc: 'User',
       });
@@ -87,7 +87,7 @@ describe('archSpecCodeMirror extensions', () => {
     });
 
     it('returns null when not explicit and no word match', () => {
-      const completionSource = createArchSpecCompletions(mockProject);
+      const completionSource = createDraftrCompletions(mockProject);
       const state = EditorState.create({
         doc: '',
       });
@@ -101,7 +101,7 @@ describe('archSpecCodeMirror extensions', () => {
     it('expands + to public when typed at empty line start', () => {
       const state = EditorState.create({doc: '  '});
       const dispatch = vi.fn();
-      const handled = handleArchSpecShortcut({state, dispatch}, 2, 2, '+');
+      const handled = handleDraftrShortcut({state, dispatch}, 2, 2, '+');
       expect(handled).toBe(true);
       expect(dispatch).toHaveBeenCalledWith({
         changes: {from: 2, to: 2, insert: 'public '},
@@ -112,7 +112,7 @@ describe('archSpecCodeMirror extensions', () => {
     it('expands - to private when typed at empty line start', () => {
       const state = EditorState.create({doc: ''});
       const dispatch = vi.fn();
-      const handled = handleArchSpecShortcut({state, dispatch}, 0, 0, '-');
+      const handled = handleDraftrShortcut({state, dispatch}, 0, 0, '-');
       expect(handled).toBe(true);
       expect(dispatch).toHaveBeenCalledWith({
         changes: {from: 0, to: 0, insert: 'private '},
@@ -123,7 +123,7 @@ describe('archSpecCodeMirror extensions', () => {
     it('ignores + or - if text exists earlier on the line', () => {
       const state = EditorState.create({doc: 'const x = '});
       const dispatch = vi.fn();
-      const handled = handleArchSpecShortcut({state, dispatch}, 10, 10, '+');
+      const handled = handleDraftrShortcut({state, dispatch}, 10, 10, '+');
       expect(handled).toBe(false);
       expect(dispatch).not.toHaveBeenCalled();
     });
@@ -131,12 +131,12 @@ describe('archSpecCodeMirror extensions', () => {
     it('ignores other characters', () => {
       const state = EditorState.create({doc: ''});
       const dispatch = vi.fn();
-      const handled = handleArchSpecShortcut({state, dispatch}, 0, 0, 'a');
+      const handled = handleDraftrShortcut({state, dispatch}, 0, 0, 'a');
       expect(handled).toBe(false);
     });
 
-    it('defines archSpecShortcuts plugin extension', () => {
-      expect(archSpecShortcuts).toBeDefined();
+    it('defines draftrShortcuts plugin extension', () => {
+      expect(draftrShortcuts).toBeDefined();
     });
   });
 
@@ -146,14 +146,14 @@ describe('archSpecCodeMirror extensions', () => {
       const tokens: Array<{token: string | null; text: string}> = [];
       while (!stream.eol()) {
         const start = stream.pos;
-        const token = archSpecStreamParser.token(stream);
+        const token = draftrStreamParser.token(stream);
         tokens.push({token, text: stream.string.slice(start, stream.pos)});
       }
       return tokens;
     }
 
     it('defines StreamLanguage extension correctly', () => {
-      expect(archSpecStreamLanguage).toBeDefined();
+      expect(draftrStreamLanguage).toBeDefined();
     });
 
     it('tokenizes comments and arrows', () => {
@@ -214,16 +214,16 @@ describe('archSpecCodeMirror extensions', () => {
 
   describe('themes and highlight styles', () => {
     it('provides distinct highlight styles for dark and light mode', () => {
-      const darkStyle = getArchSpecHighlightStyle('dark');
-      const lightStyle = getArchSpecHighlightStyle('light');
+      const darkStyle = getDraftrHighlightStyle('dark');
+      const lightStyle = getDraftrHighlightStyle('light');
       expect(darkStyle).toBeDefined();
       expect(lightStyle).toBeDefined();
       expect(darkStyle).not.toBe(lightStyle);
     });
 
     it('generates editor themes for dark and light mode', () => {
-      const darkTheme = getArchSpecEditorTheme('dark');
-      const lightTheme = getArchSpecEditorTheme('light');
+      const darkTheme = getDraftrEditorTheme('dark');
+      const lightTheme = getDraftrEditorTheme('light');
       expect(darkTheme).toBeDefined();
       expect(lightTheme).toBeDefined();
     });

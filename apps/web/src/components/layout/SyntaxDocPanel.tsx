@@ -10,7 +10,7 @@ import {
   Palette,
 } from 'lucide-react';
 import {StringStream} from '@codemirror/language';
-import {archSpecStreamParser} from '../editor/archSpecCodeMirror';
+import {draftrStreamParser} from '../editor/draftrCodeMirror';
 
 interface SyntaxDocPanelProps {
   isOpen: boolean;
@@ -43,7 +43,7 @@ export const HighlightedCodeSnippet: React.FC<{code: string}> = ({code}) => {
       const tokens: Array<{token: string | null; text: string}> = [];
       while (!stream.eol()) {
         const start = stream.pos;
-        const token = archSpecStreamParser.token(stream);
+        const token = draftrStreamParser.token(stream);
         tokens.push({
           token,
           text: stream.string.slice(start, stream.pos),
@@ -169,7 +169,7 @@ export const SyntaxDocPanel: React.FC<SyntaxDocPanelProps> = ({
           <span>3-Level Hierarchy (2-Space Indents)</span>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          The ArchSpec DSL uses a strict 3-tier hierarchy:
+          The draftr DSL uses a strict 3-tier hierarchy:
           <br />
           <strong>Level 1 (0 sp):</strong> Entities (<code>class</code>,{' '}
           <code>ui</code>, <code>db</code>, <code>api</code>, <code>event</code>

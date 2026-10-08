@@ -9,17 +9,17 @@ import {
   type ArchitectureProject,
   type ParserDiagnostic,
   extractReferencedItems,
-} from '@arch-spec/core';
+} from '@draftr/core';
 import {ReferencedChips} from './ReferencedChips';
 import {useTheme} from '../theme/ThemeProvider';
 import {
-  archSpecStreamLanguage,
-  getArchSpecHighlightStyle,
-  archSpecIndentService,
-  archSpecShortcuts,
-  getArchSpecEditorTheme,
-  createArchSpecCompletions,
-} from './archSpecCodeMirror';
+  draftrStreamLanguage,
+  getDraftrHighlightStyle,
+  draftrIndentService,
+  draftrShortcuts,
+  getDraftrEditorTheme,
+  createDraftrCompletions,
+} from './draftrCodeMirror';
 
 export interface CodeEditorProps {
   value: string;
@@ -64,15 +64,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // Extensions configuration for CodeMirror 6
   const extensions = useMemo(() => {
     const list = [
-      archSpecStreamLanguage,
-      syntaxHighlighting(getArchSpecHighlightStyle(activeTheme)),
-      archSpecIndentService,
+      draftrStreamLanguage,
+      syntaxHighlighting(getDraftrHighlightStyle(activeTheme)),
+      draftrIndentService,
       indentUnit.of('  '),
       EditorState.tabSize.of(2),
-      archSpecShortcuts,
-      getArchSpecEditorTheme(activeTheme),
+      draftrShortcuts,
+      getDraftrEditorTheme(activeTheme),
       autocompletion({
-        override: [createArchSpecCompletions(project)],
+        override: [createDraftrCompletions(project)],
       }),
       keymap.of([
         {
@@ -160,7 +160,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
         <div className="flex items-center gap-3">
           <span>Tab: 2 Spaces</span>
-          <span>ArchSpec</span>
+          <span>draftr</span>
         </div>
       </div>
     </div>

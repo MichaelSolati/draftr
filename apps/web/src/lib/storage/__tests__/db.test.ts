@@ -7,7 +7,7 @@ import {
   getActiveProjectId,
   setActiveProjectId,
 } from '../db';
-import type {ArchitectureProject} from '@arch-spec/core';
+import type {ArchitectureProject} from '@draftr/core';
 
 describe('IndexedDB storage', () => {
   const sampleProject: ArchitectureProject = {

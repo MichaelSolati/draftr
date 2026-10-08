@@ -43,7 +43,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           <div className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Layers className="h-4 w-4" />
           </div>
-          <span>SpecBuilder</span>
+          <span>draftr</span>
         </div>
 
         <div className="h-4 w-[1px] bg-border" />

@@ -1,5 +1,5 @@
 {
-  "name": "@arch-spec/core",
+  "name": "@draftr/core",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",

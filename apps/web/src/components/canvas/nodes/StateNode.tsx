@@ -1,7 +1,7 @@
 import React, {memo} from 'react';
 import {type NodeProps} from '@xyflow/react';
 import {Layers} from 'lucide-react';
-import {type StateSpec} from '@arch-spec/core';
+import {type StateSpec} from '@draftr/core';
 
 export const StateNode: React.FC<NodeProps> = memo(({data}) => {
   const spec = data as unknown as StateSpec;

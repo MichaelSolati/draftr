@@ -8,7 +8,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "paths": {
-      "@arch-spec/core": ["../../packages/core/dist/index.d.ts"]
+      "@draftr/core": ["../../packages/core/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*"]

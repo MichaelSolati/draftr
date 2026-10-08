@@ -14,7 +14,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       include: [
         'src/lib/**/*.ts',
-        'src/components/editor/archSpecCodeMirror.ts',
+        'src/components/editor/draftrCodeMirror.ts',
         'src/components/layout/SyntaxDocPanel.tsx',
       ],
       thresholds: {
@@ -25,7 +25,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
-      '@arch-spec/core': path.resolve(import.meta.dirname, '../../packages/core/src/index.ts'),
+      '@draftr/core': path.resolve(import.meta.dirname, '../../packages/core/src/index.ts'),
     },
   },
 });

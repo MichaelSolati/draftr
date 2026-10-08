@@ -4,7 +4,7 @@ import {
   formatClipboardPrompt,
   sendHandoffToLocalBridge,
 } from '../handoff';
-import type {ArchitectureProject} from '@arch-spec/core';
+import type {ArchitectureProject} from '@draftr/core';
 
 describe('handoff agent utilities', () => {
   const mockProject: ArchitectureProject = {
@@ -46,13 +46,13 @@ describe('handoff agent utilities', () => {
   it('formats clipboard prompt correctly with XML tags', () => {
     const prompt = formatClipboardPrompt(mockProject);
     expect(prompt).toContain(
-      '<architecture_specification project="OrderProcessing">'
+      '<draftr_specification project="OrderProcessing">'
     );
     expect(prompt).toContain('<raw_outline>');
     expect(prompt).toContain('<mermaid_class_diagram>');
     expect(prompt).toContain('<mermaid_flowchart>');
     expect(prompt).toContain('<data_contract_json>');
-    expect(prompt).toContain('</architecture_specification>');
+    expect(prompt).toContain('</draftr_specification>');
   });
 
   describe('sendHandoffToLocalBridge', () => {

@@ -15,7 +15,7 @@ import {
   parseOutline,
   lintArchitecture,
   type ArchitectureProject,
-} from '@arch-spec/core';
+} from '@draftr/core';
 import {
   getProject,
   saveProject,
@@ -67,7 +67,7 @@ ui App
 export const AppContent: React.FC = () => {
   const [project, setProject] = useState<ArchitectureProject>({
     id: DEFAULT_PROJECT_ID,
-    name: 'Full-Stack Architecture Spec',
+    name: 'draftr specification',
     rawOutlineText: DEFAULT_OUTLINE,
     classes: [],
     uiComponents: [],
@@ -135,7 +135,7 @@ export const AppContent: React.FC = () => {
             : DEFAULT_PROJECT_ID);
         const initialProject: ArchitectureProject = {
           id: projectId,
-          name: 'Full-Stack Architecture Spec',
+          name: 'draftr specification',
           rawOutlineText: DEFAULT_OUTLINE,
           classes: initialParsed.classes,
           uiComponents: initialParsed.uiComponents,

@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@arch-spec/core': path.resolve(__dirname, '../../packages/core/src'),
+      '@': path.resolve(import.meta.dirname, './src'),
+      '@draftr/core': path.resolve(import.meta.dirname, '../../packages/core/src'),
     },
   },
   server: {

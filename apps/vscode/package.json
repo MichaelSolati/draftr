@@ -1,9 +1,9 @@
 {
-  "name": "arch-spec-vscode",
-  "displayName": "ArchSpec",
-  "description": "Language support, syntax highlighting, and architecture linting for ArchSpec (.archspec) files",
+  "name": "draftr-vscode",
+  "displayName": "draftr",
+  "description": "Language support, syntax highlighting, and architecture linting for draftr (.draftr) files",
   "version": "0.1.0",
-  "publisher": "arch-spec",
+  "publisher": "draftr",
   "type": "module",
   "engines": {
     "vscode": "^1.80.0"
@@ -14,23 +14,24 @@
     "Snippets"
   ],
   "activationEvents": [
+    "onLanguage:draftr",
     "onLanguage:archspec"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "languages": [
       {
-        "id": "archspec",
-        "aliases": ["ArchSpec", "archspec", "Arch"],
-        "extensions": [".archspec", ".arch"],
+        "id": "draftr",
+        "aliases": ["draftr", "archspec"],
+        "extensions": [".draftr", ".archspec", ".arch"],
         "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
-        "language": "archspec",
-        "scopeName": "source.archspec",
-        "path": "./syntaxes/archspec.tmLanguage.json"
+        "language": "draftr",
+        "scopeName": "source.draftr",
+        "path": "./syntaxes/draftr.tmLanguage.json"
       }
     ]
   },
@@ -41,7 +42,7 @@
     "watch": "tsc -watch -p ./"
   },
   "dependencies": {
-    "@arch-spec/core": "*"
+    "@draftr/core": "*"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

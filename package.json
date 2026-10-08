@@ -1,5 +1,5 @@
 {
-  "name": "arch-spec-monorepo",
+  "name": "draftr-monorepo",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -8,7 +8,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@arch-spec/web",
+    "dev": "npm run dev --workspace=@draftr/web",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces --if-present",
     "coverage": "npm run coverage --workspaces --if-present",

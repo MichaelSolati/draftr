@@ -8,7 +8,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
-import {type ArchitectureProject} from '@arch-spec/core';
+import {type ArchitectureProject} from '@draftr/core';
 import {
   formatClipboardPrompt,
   sendHandoffToLocalBridge,

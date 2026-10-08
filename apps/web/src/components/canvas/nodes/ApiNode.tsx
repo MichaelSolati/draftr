@@ -1,7 +1,7 @@
 import React, {memo} from 'react';
 import {Handle, Position, type NodeProps} from '@xyflow/react';
 import {Globe} from 'lucide-react';
-import {type ApiRouteSpec, type HttpMethod} from '@arch-spec/core';
+import {type ApiRouteSpec, type HttpMethod} from '@draftr/core';
 
 function renderMethodBadge(method: HttpMethod) {
   let color = 'bg-muted text-muted-foreground';

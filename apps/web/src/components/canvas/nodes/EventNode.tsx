@@ -1,7 +1,7 @@
 import React, {memo} from 'react';
 import {Handle, Position, type NodeProps} from '@xyflow/react';
 import {Zap} from 'lucide-react';
-import {type EventSpec} from '@arch-spec/core';
+import {type EventSpec} from '@draftr/core';
 
 export const EventNode: React.FC<NodeProps> = memo(({data}) => {
   const spec = data as unknown as EventSpec;

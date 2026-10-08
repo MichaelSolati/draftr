@@ -2,7 +2,7 @@ import {
   type ArchitectureProject,
   exportToMermaidClassDiagram,
   exportToMermaidFlowchart,
-} from '@arch-spec/core';
+} from '@draftr/core';
 
 export interface ClaudeHandoffPayload {
   projectId: string;
@@ -34,7 +34,7 @@ export function buildClaudeHandoffPayload(
 
 export function formatClipboardPrompt(project: ArchitectureProject): string {
   const payload = buildClaudeHandoffPayload(project);
-  return `<architecture_specification project="${payload.projectName}">
+  return `<draftr_specification project="${payload.projectName}">
 <overview>
 Please implement this software system following the architecture graph, domain classes, method signatures, UI hierarchy, and invocation call paths specified below.
 </overview>
@@ -54,7 +54,7 @@ ${payload.mermaidFlowchart}
 <data_contract_json>
 ${JSON.stringify({classes: payload.classes, uiComponents: payload.uiComponents, connections: payload.connections}, null, 2)}
 </data_contract_json>
-</architecture_specification>`;
+</draftr_specification>`;
 }
 
 export async function sendHandoffToLocalBridge(

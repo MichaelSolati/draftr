@@ -1,7 +1,7 @@
 import React, {memo} from 'react';
 import {Handle, Position, type NodeProps} from '@xyflow/react';
 import {Database, Key, Link} from 'lucide-react';
-import {type TableSpec} from '@arch-spec/core';
+import {type TableSpec} from '@draftr/core';
 
 export const TableNode: React.FC<NodeProps> = memo(({data}) => {
   const spec = data as unknown as TableSpec;

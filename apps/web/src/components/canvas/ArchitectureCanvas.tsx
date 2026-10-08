@@ -31,8 +31,8 @@ import {TableNode} from './nodes/TableNode';
 import {ApiNode} from './nodes/ApiNode';
 import {EventNode} from './nodes/EventNode';
 import {StateNode} from './nodes/StateNode';
-import {type ArchitectureProject, type DomainType} from '@arch-spec/core';
-import {extractEntityRawSnippet} from '@arch-spec/core';
+import {type ArchitectureProject, type DomainType} from '@draftr/core';
+import {extractEntityRawSnippet} from '@draftr/core';
 
 const nodeTypes = {
   classNode: ClassNode,

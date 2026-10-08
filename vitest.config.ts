@@ -16,7 +16,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@arch-spec/core': path.resolve(import.meta.dirname, 'packages/core/src/index.ts'),
+      '@draftr/core': path.resolve(import.meta.dirname, 'packages/core/src/index.ts'),
     },
   },
 });

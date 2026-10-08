@@ -1,7 +1,7 @@
 import React, {memo} from 'react';
 import {Handle, Position, type NodeProps} from '@xyflow/react';
 import {Layout, Link2} from 'lucide-react';
-import {type UIComponentSpec} from '@arch-spec/core';
+import {type UIComponentSpec} from '@draftr/core';
 
 export const UINode: React.FC<NodeProps> = memo(({data}) => {
   const spec = data as unknown as UIComponentSpec;

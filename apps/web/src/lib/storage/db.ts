@@ -1,7 +1,7 @@
 import {openDB, type IDBPDatabase} from 'idb';
-import {type ArchitectureProject} from '@arch-spec/core';
+import {type ArchitectureProject} from '@draftr/core';
 
-const DB_NAME = 'arch_spec_builder_db';
+const DB_NAME = 'draftr_db';
 const DB_VERSION = 1;
 
 interface SpecDB {
@@ -65,7 +65,7 @@ export async function deleteProject(id: string): Promise<void> {
 }
 
 export async function getActiveProjectId(): Promise<string | null> {
-  const local = localStorage.getItem('arch-active-project-id');
+  const local = localStorage.getItem('draftr-active-project-id');
   if (local) return local;
 
   const db = await getDB();
@@ -74,7 +74,7 @@ export async function getActiveProjectId(): Promise<string | null> {
 }
 
 export async function setActiveProjectId(id: string): Promise<void> {
-  localStorage.setItem('arch-active-project-id', id);
+  localStorage.setItem('draftr-active-project-id', id);
   const db = await getDB();
   await db.put('metadata', {key: 'activeProjectId', value: id});
 }

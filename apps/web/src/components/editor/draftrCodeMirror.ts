@@ -11,12 +11,12 @@ import {
   type CompletionContext,
   type CompletionResult,
 } from '@codemirror/autocomplete';
-import {type ArchitectureProject} from '@arch-spec/core';
+import {type ArchitectureProject} from '@draftr/core';
 
 /**
- * StreamLanguage definition for ArchSpec DSL
+ * StreamLanguage definition for draftr DSL
  */
-export const archSpecStreamParser = {
+export const draftrStreamParser = {
   tokenTable: {
     keyword: t.keyword,
     action: t.controlKeyword,
@@ -121,13 +121,12 @@ export const archSpecStreamParser = {
   },
 };
 
-export const archSpecStreamLanguage =
-  StreamLanguage.define(archSpecStreamParser);
+export const draftrStreamLanguage = StreamLanguage.define(draftrStreamParser);
 
 /**
  * Dark theme token colors matching our design system
  */
-export const archSpecDarkHighlightStyle = HighlightStyle.define([
+export const draftrDarkHighlightStyle = HighlightStyle.define([
   {tag: t.keyword, color: '#f59e0b', fontWeight: 'bold'}, // Amber
   {tag: t.controlKeyword, color: '#c084fc', fontWeight: 'bold'}, // Light purple
   {tag: t.modifier, color: '#34d399', fontWeight: 'bold'}, // Emerald
@@ -144,7 +143,7 @@ export const archSpecDarkHighlightStyle = HighlightStyle.define([
 /**
  * Light theme token colors with high contrast for white/light backgrounds
  */
-export const archSpecLightHighlightStyle = HighlightStyle.define([
+export const draftrLightHighlightStyle = HighlightStyle.define([
   {tag: t.keyword, color: '#b45309', fontWeight: 'bold'}, // Amber 700
   {tag: t.controlKeyword, color: '#7e22ce', fontWeight: 'bold'}, // Purple 700
   {tag: t.modifier, color: '#047857', fontWeight: 'bold'}, // Emerald 700
@@ -158,15 +157,15 @@ export const archSpecLightHighlightStyle = HighlightStyle.define([
   {tag: t.variableName, color: '#334155'}, // Slate 700 (dark text)
 ]);
 
-export const archSpecHighlightStyle = archSpecDarkHighlightStyle;
+export const draftrHighlightStyle = draftrDarkHighlightStyle;
 
-export function getArchSpecHighlightStyle(mode: 'dark' | 'light' = 'dark') {
+export function getDraftrHighlightStyle(mode: 'dark' | 'light' = 'dark') {
   return mode === 'light'
-    ? archSpecLightHighlightStyle
-    : archSpecDarkHighlightStyle;
+    ? draftrLightHighlightStyle
+    : draftrDarkHighlightStyle;
 }
 
-export function computeArchSpecIndent(prevLineText: string): number {
+export function computeDraftrIndent(prevLineText: string): number {
   const trimmed = prevLineText.trim();
   const currentIndent = (prevLineText.match(/^(\s*)/)?.[1] || '').length;
 
@@ -208,12 +207,12 @@ export function computeArchSpecIndent(prevLineText: string): number {
  * 2) Method/Property -> 4 spaces
  * 3) Call -> 4 spaces
  */
-export const archSpecIndentService = indentService.of((context, pos) => {
+export const draftrIndentService = indentService.of((context, pos) => {
   const prevLine = context.lineAt(pos, -1);
-  return computeArchSpecIndent(prevLine.text);
+  return computeDraftrIndent(prevLine.text);
 });
 
-export function handleArchSpecShortcut(
+export function handleDraftrShortcut(
   view: {
     state: EditorState;
     dispatch: (tr: {
@@ -243,14 +242,14 @@ export function handleArchSpecShortcut(
 /**
  * Shortcut: Typing '+' at empty line expands to 'public ', '-' expands to 'private '
  */
-export const archSpecShortcuts = EditorView.inputHandler.of(
-  (view, from, to, text) => handleArchSpecShortcut(view, from, to, text)
+export const draftrShortcuts = EditorView.inputHandler.of(
+  (view, from, to, text) => handleDraftrShortcut(view, from, to, text)
 );
 
 /**
  * Autocompletion source with known keywords, types, and project entities
  */
-export function createArchSpecCompletions(project?: ArchitectureProject) {
+export function createDraftrCompletions(project?: ArchitectureProject) {
   return (context: CompletionContext): CompletionResult | null => {
     const word = context.matchBefore(/[A-Za-z0-9_$.+#-]*/);
     if (!word || (word.from === word.to && !context.explicit)) return null;
@@ -351,7 +350,7 @@ export function createArchSpecCompletions(project?: ArchitectureProject) {
 /**
  * Editor Theme generator supporting light and dark modes
  */
-export function getArchSpecEditorTheme(mode: 'dark' | 'light' = 'dark') {
+export function getDraftrEditorTheme(mode: 'dark' | 'light' = 'dark') {
   const isDark = mode === 'dark';
   return EditorView.theme(
     {
@@ -426,4 +425,19 @@ export function getArchSpecEditorTheme(mode: 'dark' | 'light' = 'dark') {
   );
 }
 
-export const archSpecEditorTheme = getArchSpecEditorTheme('dark');
+export const draftrEditorTheme = getDraftrEditorTheme('dark');
+
+// Backward compatibility aliases
+export const archSpecStreamParser = draftrStreamParser;
+export const archSpecStreamLanguage = draftrStreamLanguage;
+export const archSpecDarkHighlightStyle = draftrDarkHighlightStyle;
+export const archSpecLightHighlightStyle = draftrLightHighlightStyle;
+export const archSpecHighlightStyle = draftrHighlightStyle;
+export const getArchSpecHighlightStyle = getDraftrHighlightStyle;
+export const computeArchSpecIndent = computeDraftrIndent;
+export const archSpecIndentService = draftrIndentService;
+export const handleArchSpecShortcut = handleDraftrShortcut;
+export const archSpecShortcuts = draftrShortcuts;
+export const createArchSpecCompletions = createDraftrCompletions;
+export const getArchSpecEditorTheme = getDraftrEditorTheme;
+export const archSpecEditorTheme = draftrEditorTheme;

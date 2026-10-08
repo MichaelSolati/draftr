@@ -1,13 +1,14 @@
 import * as vscode from 'vscode';
-import {parseOutline, lintArchitecture} from '@arch-spec/core';
+import {parseOutline, lintArchitecture} from '@draftr/core';
 
 export function activate(context: vscode.ExtensionContext) {
   const diagnosticCollection =
-    vscode.languages.createDiagnosticCollection('archspec');
+    vscode.languages.createDiagnosticCollection('draftr');
   context.subscriptions.push(diagnosticCollection);
 
   const validateDocument = (document: vscode.TextDocument) => {
-    if (document.languageId !== 'archspec') return;
+    if (document.languageId !== 'draftr' && document.languageId !== 'archspec')
+      return;
 
     const text = document.getText();
     const parseResult = parseOutline(text);
@@ -74,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
       diagnostics.push(
         new vscode.Diagnostic(
           range,
-          `[ArchSpec] ${issue.title}: ${issue.description}`,
+          `[draftr] ${issue.title}: ${issue.description}`,
           severity
         )
       );
