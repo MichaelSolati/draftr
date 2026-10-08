@@ -297,7 +297,7 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // Bi-directional sync: dragging wires adds inline calls or entity-level connections
+  // Bi-directional sync: dragging wires adds calls on a new third indentation line or entity-level connections
   const handleConnectWire = (
     sourceEntity: string,
     sourceMember: string | null,
@@ -306,37 +306,103 @@ export const AppContent: React.FC = () => {
   ) => {
     const lines = project.rawOutlineText.split('\n');
 
-    // Case 1: Method-to-method wire
-    if (sourceMember && targetMember) {
-      let insideTargetClass = false;
-      let modified = false;
+    // Case 1: Member-level wire (Method or Property to Member or Entity)
+    if (sourceMember) {
+      let insideSourceClass = false;
+      let methodIdx = -1;
 
-      const newLines = lines.map(line => {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const trimmed = line.trim();
         const classMatch = trimmed.match(/^class\s+([A-Za-z0-9_$]+)/);
 
         if (classMatch) {
-          insideTargetClass = classMatch[1] === sourceEntity;
+          insideSourceClass = classMatch[1] === sourceEntity;
+          continue;
         }
 
-        if (insideTargetClass && !modified) {
+        if (
+          insideSourceClass &&
+          /^(class|ui|db|api|event|state|interface|type)\s+/.test(trimmed) &&
+          !line.startsWith(' ') &&
+          !line.startsWith('\t')
+        ) {
+          insideSourceClass = false;
+        }
+
+        if (insideSourceClass) {
           const methodRegex = new RegExp(
-            `^(?:[+\\-#]|(?:public|private|protected|readonly|get|set)\\b)\\s*${sourceMember}\\s*\\(`,
+            `^(?:[+\\-#]|(?:public|private|protected|readonly|get|set)\\b)?\\s*${sourceMember}\\s*\\(`,
             'i'
           );
           if (methodRegex.test(trimmed)) {
-            modified = true;
-            const arrowIndex = line.indexOf('->');
-            const cleanLine =
-              arrowIndex !== -1 ? line.slice(0, arrowIndex).trimEnd() : line;
-            return `${cleanLine} -> ${targetEntity}.${targetMember}`;
+            methodIdx = i;
+            break;
           }
         }
-        return line;
-      });
+      }
 
-      if (modified) {
-        handleTextChange(newLines.join('\n'));
+      if (methodIdx !== -1) {
+        const methodLine = lines[methodIdx];
+        const matchIndent = methodLine.match(/^(\s*)/);
+        const methodIndent = matchIndent ? matchIndent[1] : '  ';
+        const callIndent = methodIndent.includes('\t')
+          ? methodIndent + '\t'
+          : methodIndent + (methodIndent || '  ');
+
+        // Clean any existing inline arrow/calls on the method declaration itself
+        let cleanMethodLine = methodLine;
+        const arrowIndex = methodLine.indexOf('->');
+        const callsIndex = methodLine.search(/\b(?:calls|invokes)\b/i);
+        if (arrowIndex !== -1) {
+          cleanMethodLine = methodLine.slice(0, arrowIndex).trimEnd();
+        } else if (callsIndex !== -1) {
+          cleanMethodLine = methodLine.slice(0, callsIndex).trimEnd();
+        }
+
+        // Resolve target method vs property
+        const targetClassSpec =
+          parseResult.classes.find(c => c.name === targetEntity) ||
+          project.classes?.find(c => c.name === targetEntity);
+        const isMethod =
+          targetMember &&
+          targetClassSpec?.methods?.some(m => m.name === targetMember);
+        const targetMemberSuffix = targetMember
+          ? `.${targetMember}${isMethod ? '()' : ''}`
+          : '';
+        const callTarget = `${targetEntity}${targetMemberSuffix}`;
+        const callLine = `${callIndent}calls ${callTarget}`;
+
+        // Find insertion point (after any existing calls of this method)
+        let insertAt = methodIdx + 1;
+        let alreadyExists = false;
+        while (insertAt < lines.length) {
+          const nextTrimmed = lines[insertAt].trim();
+          if (
+            nextTrimmed.startsWith('calls ') ||
+            nextTrimmed.startsWith('invokes ') ||
+            nextTrimmed.startsWith('->') ||
+            nextTrimmed.startsWith('- ') ||
+            nextTrimmed.startsWith('+ ')
+          ) {
+            if (
+              nextTrimmed.includes(targetEntity) &&
+              (!targetMember || nextTrimmed.includes(targetMember))
+            ) {
+              alreadyExists = true;
+              break;
+            }
+            insertAt++;
+          } else {
+            break;
+          }
+        }
+
+        if (!alreadyExists) {
+          lines[methodIdx] = cleanMethodLine;
+          lines.splice(insertAt, 0, callLine);
+          handleTextChange(lines.join('\n'));
+        }
         return;
       }
     }
@@ -347,7 +413,8 @@ export const AppContent: React.FC = () => {
     let isUI = false;
 
     for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
+      const line = lines[i];
+      const trimmed = line.trim();
       const entityMatch = trimmed.match(
         /^(class|ui|interface|type)\s+([A-Za-z0-9_$]+)/
       );
@@ -369,9 +436,13 @@ export const AppContent: React.FC = () => {
     }
 
     if (insertIndex !== -1) {
+      const prevLine = lines[insertIndex - 1] || '';
+      const prevIndentMatch = prevLine.match(/^(\s+)/);
+      const level2Indent = prevIndentMatch ? prevIndentMatch[1] : '  ';
+
       const directive = isUI
-        ? `  binds ${targetEntity}`
-        : `  calls ${targetEntity}${targetMember ? '.' + targetMember : ''}`;
+        ? `${level2Indent}binds ${targetEntity}`
+        : `${level2Indent}calls ${targetEntity}${targetMember ? '.' + targetMember : ''}`;
       const alreadyExists = lines
         .slice(0, insertIndex)
         .some(l => l.trim() === directive.trim());
