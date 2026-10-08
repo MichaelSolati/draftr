@@ -1,0 +1,51 @@
+{
+  "name": "arch-spec-vscode",
+  "displayName": "ArchSpec",
+  "description": "Language support, syntax highlighting, and architecture linting for ArchSpec (.archspec) files",
+  "version": "0.1.0",
+  "publisher": "arch-spec",
+  "type": "module",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Snippets"
+  ],
+  "activationEvents": [
+    "onLanguage:archspec"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "archspec",
+        "aliases": ["ArchSpec", "archspec", "Arch"],
+        "extensions": [".archspec", ".arch"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "archspec",
+        "scopeName": "source.archspec",
+        "path": "./syntaxes/archspec.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "@arch-spec/core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.6.3"
+  }
+}

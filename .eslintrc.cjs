@@ -4,7 +4,12 @@ module.exports = {
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: ['./tsconfig.app.json', './tsconfig.node.json'],
+    project: [
+      './tsconfig.json',
+      './packages/core/tsconfig.json',
+      './apps/web/tsconfig.json',
+      './apps/vscode/tsconfig.json',
+    ],
   },
   plugins: ['react', 'react-hooks'],
   settings: {
@@ -15,6 +20,7 @@ module.exports = {
   rules: {
     // GTS noisy node rules off
     'n/no-extraneous-import': 'off',
+    'n/no-unpublished-import': 'off',
     'n/no-unsupported-features/es-builtins': 'off',
     'n/no-unsupported-features/node-builtins': 'off',
     // React rules

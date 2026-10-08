@@ -1,0 +1,131 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "ArchSpec",
+  "scopeName": "source.archspec",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#declarations"
+    },
+    {
+      "include": "#modifiers"
+    },
+    {
+      "include": "#actions"
+    },
+    {
+      "include": "#http_verbs"
+    },
+    {
+      "include": "#db_modifiers"
+    },
+    {
+      "include": "#methods"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#properties"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.archspec",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(class|interface|type|ui|db|api|event|state)\\s+([A-Za-z0-9_$/]+)",
+          "captures": {
+            "1": { "name": "keyword.control.declaration.archspec" },
+            "2": { "name": "entity.name.type.class.archspec" }
+          }
+        }
+      ]
+    },
+    "modifiers": {
+      "patterns": [
+        {
+          "match": "\\b(public|private|protected|readonly|get|set)\\b",
+          "name": "storage.modifier.archspec"
+        },
+        {
+          "match": "^\\s*([+\\-#])(?=\\s*[A-Za-z0-9_$])",
+          "captures": {
+            "1": { "name": "storage.modifier.symbol.archspec" }
+          }
+        }
+      ]
+    },
+    "actions": {
+      "patterns": [
+        {
+          "match": "\\b(binds|calls|invokes)\\b",
+          "name": "keyword.operator.action.archspec"
+        },
+        {
+          "match": "->",
+          "name": "keyword.operator.arrow.archspec"
+        }
+      ]
+    },
+    "http_verbs": {
+      "patterns": [
+        {
+          "match": "\\b(GET|POST|PUT|DELETE|PATCH)\\b",
+          "name": "keyword.other.http.archspec"
+        }
+      ]
+    },
+    "db_modifiers": {
+      "patterns": [
+        {
+          "match": "\\b(pk|fk|unique)\\b",
+          "name": "storage.modifier.database.archspec"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "match": "\\b(string|number|boolean|any|void|never|unknown|uuid|text|int|serial|timestamp|jsonb)\\b",
+          "name": "support.type.primitive.archspec"
+        },
+        {
+          "match": "(?<=:\\s*)([A-Z][A-Za-z0-9_$]*(?:\\.[A-Za-z0-9_$]+)?)",
+          "captures": {
+            "1": { "name": "entity.name.type.custom.archspec" }
+          }
+        }
+      ]
+    },
+    "methods": {
+      "patterns": [
+        {
+          "match": "([A-Za-z0-9_$]+)\\s*\\(",
+          "captures": {
+            "1": { "name": "entity.name.function.archspec" }
+          }
+        }
+      ]
+    },
+    "properties": {
+      "patterns": [
+        {
+          "match": "([A-Za-z0-9_$]+)(?=\\s*:)",
+          "captures": {
+            "1": { "name": "variable.other.property.archspec" }
+          }
+        }
+      ]
+    }
+  }
+}

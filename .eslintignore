@@ -1,5 +1,11 @@
 coverage
 dist
+**/dist
 node_modules
 *.html
 .husky
+graphify-out
+*.config.js
+*.config.ts
+**/*.config.js
+**/*.config.ts
