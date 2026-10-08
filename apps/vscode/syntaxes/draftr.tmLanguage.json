@@ -79,7 +79,7 @@
     "actions": {
       "patterns": [
         {
-          "match": "\\b(binds|calls|invokes)\\b",
+          "match": "\\b(binds?|calls|invokes)\\b",
           "name": "keyword.operator.action.draftr"
         },
         {

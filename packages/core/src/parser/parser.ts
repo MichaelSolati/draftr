@@ -368,7 +368,7 @@ export function parseOutline(text: string): ParseResult {
     }
 
     // 7. UI-to-Logic binding: binds <LogicEntity>
-    const bindsMatch = trimmed.match(/^binds\s+([A-Za-z0-9_$]+)/);
+    const bindsMatch = trimmed.match(/^binds?\s+([A-Za-z0-9_$]+)/);
     if (bindsMatch) {
       if (parent && parent.type === 'ui') {
         const targetEntity = bindsMatch[1];
@@ -413,7 +413,7 @@ export function parseOutline(text: string): ParseResult {
         diagnostics.push({
           line: lineNum,
           message:
-            '"binds" keyword must be nested under a UI component or class',
+            '"bind" or "binds" keyword must be nested under a UI component or class',
           severity: 'warning',
         });
       }
@@ -676,11 +676,11 @@ export function parseOutline(text: string): ParseResult {
 
       // Direct class dependency / call: calls Target, -> Target, or binds Target
       const callMatch = trimmed.match(
-        /^(calls|invokes|->|binds)\s+([A-Za-z0-9_$.]+)/i
+        /^(calls|invokes|->|binds?)\s+([A-Za-z0-9_$.]+)/i
       );
       if (callMatch) {
         const keyword = callMatch[1].toLowerCase();
-        const isBinds = keyword === 'binds';
+        const isBinds = keyword === 'binds' || keyword === 'bind';
         const targetStr = callMatch[2].trim();
         const dotIdx = targetStr.indexOf('.');
         let targetClass =

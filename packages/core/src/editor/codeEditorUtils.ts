@@ -57,6 +57,7 @@ export const DSL_KEYWORDS = [
   {label: 'event', detail: 'Event emission declaration'},
   {label: 'state', detail: 'State store slice declaration'},
   {label: 'binds', detail: 'Bind service to UI component'},
+  {label: 'bind', detail: 'Bind service to UI component'},
   {label: 'calls', detail: 'Invoke method on service'},
   {label: 'emits', detail: 'Emit event message'},
   {label: 'public', detail: 'Public member visibility'},
@@ -686,7 +687,7 @@ export function extractReferencedItems(
     }
 
     // 2. Bound services: binds ServiceName
-    const bindsMatch = trimmed.match(/^binds\s+([A-Za-z0-9_$,\s]+)/);
+    const bindsMatch = trimmed.match(/^binds?\s+([A-Za-z0-9_$,\s]+)/);
     if (bindsMatch) {
       const services = bindsMatch[1].split(/[\s,]+/).filter(Boolean);
       services.forEach(s => {

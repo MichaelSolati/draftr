@@ -99,40 +99,103 @@ describe('draftrCodeMirror extensions', () => {
   });
 
   describe('shortcuts', () => {
-    it('expands + to public when typed at empty line start', () => {
-      const state = EditorState.create({doc: '  '});
+    it('does not expand + or - immediately when typed without a space', () => {
+      const statePlus = EditorState.create({doc: '  '});
+      const dispatchPlus = vi.fn();
+      const handledPlus = handleDraftrShortcut(
+        {state: statePlus, dispatch: dispatchPlus},
+        2,
+        2,
+        '+'
+      );
+      expect(handledPlus).toBe(false);
+      expect(dispatchPlus).not.toHaveBeenCalled();
+
+      const stateMinus = EditorState.create({doc: ''});
+      const dispatchMinus = vi.fn();
+      const handledMinus = handleDraftrShortcut(
+        {state: stateMinus, dispatch: dispatchMinus},
+        0,
+        0,
+        '-'
+      );
+      expect(handledMinus).toBe(false);
+      expect(dispatchMinus).not.toHaveBeenCalled();
+    });
+
+    it('expands + to public when space is typed after + at line start', () => {
+      const state = EditorState.create({doc: '  +'});
       const dispatch = vi.fn();
-      const handled = handleDraftrShortcut({state, dispatch}, 2, 2, '+');
+      const handled = handleDraftrShortcut({state, dispatch}, 3, 3, ' ');
       expect(handled).toBe(true);
       expect(dispatch).toHaveBeenCalledWith({
-        changes: {from: 2, to: 2, insert: 'public '},
+        changes: {from: 2, to: 3, insert: 'public '},
         selection: {anchor: 9},
       });
     });
 
-    it('expands - to private when typed at empty line start', () => {
-      const state = EditorState.create({doc: ''});
+    it('expands - to private when space is typed after - at line start', () => {
+      const state = EditorState.create({doc: '-'});
       const dispatch = vi.fn();
-      const handled = handleDraftrShortcut({state, dispatch}, 0, 0, '-');
+      const handled = handleDraftrShortcut({state, dispatch}, 1, 1, ' ');
       expect(handled).toBe(true);
       expect(dispatch).toHaveBeenCalledWith({
-        changes: {from: 0, to: 0, insert: 'private '},
+        changes: {from: 0, to: 1, insert: 'private '},
         selection: {anchor: 8},
       });
     });
 
-    it('ignores + or - if text exists earlier on the line', () => {
-      const state = EditorState.create({doc: 'const x = '});
+    it('expands # to protected when space is typed after # at line start', () => {
+      const state = EditorState.create({doc: '  #'});
       const dispatch = vi.fn();
-      const handled = handleDraftrShortcut({state, dispatch}, 10, 10, '+');
+      const handled = handleDraftrShortcut({state, dispatch}, 3, 3, ' ');
+      expect(handled).toBe(true);
+      expect(dispatch).toHaveBeenCalledWith({
+        changes: {from: 2, to: 3, insert: 'protected '},
+        selection: {anchor: 12},
+      });
+    });
+
+    it('expands -> to calls when typed under a class or method', () => {
+      const state = EditorState.create({
+        doc: 'class OrderService\n  public checkout(): void\n    ->',
+      });
+      const pos = state.doc.length; // after '->'
+      const dispatch = vi.fn();
+      const handled = handleDraftrShortcut({state, dispatch}, pos, pos, ' ');
+      expect(handled).toBe(true);
+      expect(dispatch).toHaveBeenCalledWith({
+        changes: {from: pos - 2, to: pos, insert: 'calls '},
+        selection: {anchor: pos - 2 + 6},
+      });
+    });
+
+    it('expands -> to binds when typed under a ui component', () => {
+      const state = EditorState.create({
+        doc: 'ui CheckoutCard\n  ->',
+      });
+      const pos = state.doc.length;
+      const dispatch = vi.fn();
+      const handled = handleDraftrShortcut({state, dispatch}, pos, pos, ' ');
+      expect(handled).toBe(true);
+      expect(dispatch).toHaveBeenCalledWith({
+        changes: {from: pos - 2, to: pos, insert: 'binds '},
+        selection: {anchor: pos - 2 + 6},
+      });
+    });
+
+    it('ignores space after + or - if other text exists earlier on the line', () => {
+      const state = EditorState.create({doc: 'const x = +'});
+      const dispatch = vi.fn();
+      const handled = handleDraftrShortcut({state, dispatch}, 11, 11, ' ');
       expect(handled).toBe(false);
       expect(dispatch).not.toHaveBeenCalled();
     });
 
-    it('ignores other characters', () => {
-      const state = EditorState.create({doc: ''});
+    it('ignores non-space characters', () => {
+      const state = EditorState.create({doc: '-'});
       const dispatch = vi.fn();
-      const handled = handleDraftrShortcut({state, dispatch}, 0, 0, 'a');
+      const handled = handleDraftrShortcut({state, dispatch}, 1, 1, '>');
       expect(handled).toBe(false);
     });
 

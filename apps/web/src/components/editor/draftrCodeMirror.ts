@@ -212,6 +212,40 @@ export const draftrIndentService = indentService.of((context, pos) => {
   return computeDraftrIndent(prevLine.text);
 });
 
+/**
+ * Detect enclosing entity block for context-sensitive shortcuts.
+ * Returns 'ui' if the cursor is within a UI component declaration,
+ * 'class' if within a class/interface, or 'root'.
+ */
+export function getDraftrContext(
+  doc: {line: (n: number) => {text: string}},
+  currentLineNumber: number
+): 'ui' | 'class' | 'root' {
+  for (let l = currentLineNumber - 1; l >= 1; l--) {
+    const rawLine = doc.line(l).text;
+    const trimmed = rawLine.trim();
+    if (!trimmed || trimmed.startsWith('//')) continue;
+    // Check top-level block declaration (starts with 0 leading spaces/tabs)
+    if (!rawLine.startsWith(' ') && !rawLine.startsWith('\t')) {
+      if (/^ui\b/i.test(trimmed)) {
+        return 'ui';
+      }
+      if (/^(?:abstract\s+class|class|interface)\b/i.test(trimmed)) {
+        return 'class';
+      }
+      return 'root';
+    }
+  }
+  return 'root';
+}
+
+/**
+ * Shortcut handler: When typing a space (' ') at the end of a line-start symbol:
+ * - '+' + space -> 'public '
+ * - '-' + space -> 'private '
+ * - '#' + space -> 'protected '
+ * - '->' + space -> 'binds ' (under UI) or 'calls ' (under classes/methods)
+ */
 export function handleDraftrShortcut(
   view: {
     state: EditorState;
@@ -224,23 +258,48 @@ export function handleDraftrShortcut(
   to: number,
   text: string
 ): boolean {
-  if (text === '+' || text === '-') {
-    const line = view.state.doc.lineAt(from);
-    const prefix = view.state.doc.sliceString(line.from, from);
-    if (prefix.trim() === '') {
-      const expansion = text === '+' ? 'public ' : 'private ';
-      view.dispatch({
-        changes: {from, to, insert: expansion},
-        selection: {anchor: from + expansion.length},
-      });
-      return true;
-    }
+  if (text !== ' ' || from !== to) {
+    return false;
   }
+
+  const line = view.state.doc.lineAt(from);
+  const prefix = view.state.doc.sliceString(line.from, from);
+  const match = prefix.match(/^(\s*)([+\-#]|->)$/);
+
+  if (!match) {
+    return false;
+  }
+
+  const indent = match[1];
+  const symbol = match[2];
+  const symbolStart = line.from + indent.length;
+  const symbolEnd = from;
+
+  let expansion = '';
+  if (symbol === '+') {
+    expansion = 'public ';
+  } else if (symbol === '-') {
+    expansion = 'private ';
+  } else if (symbol === '#') {
+    expansion = 'protected ';
+  } else if (symbol === '->') {
+    const ctx = getDraftrContext(view.state.doc, line.number);
+    expansion = ctx === 'ui' ? 'binds ' : 'calls ';
+  }
+
+  if (expansion) {
+    view.dispatch({
+      changes: {from: symbolStart, to: symbolEnd, insert: expansion},
+      selection: {anchor: symbolStart + expansion.length},
+    });
+    return true;
+  }
+
   return false;
 }
 
 /**
- * Shortcut: Typing '+' at empty line expands to 'public ', '-' expands to 'private '
+ * Shortcut: Space after '+', '-', '#', or '->' at line start expands to keyword
  */
 export const draftrShortcuts = EditorView.inputHandler.of(
   (view, from, to, text) => handleDraftrShortcut(view, from, to, text)
@@ -287,6 +346,7 @@ export function createDraftrCompletions(project?: ArchitectureProject) {
       // Invocations
       {label: 'calls', type: 'keyword', info: 'Call target method/class'},
       {label: 'binds', type: 'keyword', info: 'Bind logic service to UI'},
+      {label: 'bind', type: 'keyword', info: 'Bind logic service to UI'},
 
       // HTTP Verbs
       {label: 'GET', type: 'keyword', info: 'HTTP GET endpoint'},

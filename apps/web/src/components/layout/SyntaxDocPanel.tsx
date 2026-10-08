@@ -103,7 +103,7 @@ export const SyntaxDocPanel: React.FC<SyntaxDocPanelProps> = ({
     },
     {
       title: 'Shortcuts & Visibility Modifiers',
-      desc: 'Type "+" at line start to expand to "public ", or "-" to expand to "private ". You can also use "#" or "protected".',
+      desc: 'Type "+" or "-" followed by a space at line start to expand to "public " or "private ". Type "->" followed by a space to expand to "calls " (under classes) or "binds " (under UI). You can also use "#" or "protected".',
       code: 'class UserService\n  public login(email: string): Session\n  private hashPassword(raw: string): string\n  public profile: UserProfile',
     },
     {

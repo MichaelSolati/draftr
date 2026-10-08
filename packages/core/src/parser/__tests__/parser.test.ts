@@ -318,6 +318,21 @@ class NotificationService
     expect(orderCalls[2].type).toBe('invokes');
   });
 
+  it('supports bind as well as binds keyword under UI component', () => {
+    const text = `
+class AuthService
+  + login(): boolean
+
+ui LoginForm
+  bind AuthService
+`;
+    const result = parseOutline(text);
+    const uiBind = result.connections.find(c => c.sourceId === 'ui-LoginForm');
+    expect(uiBind).toBeDefined();
+    expect(uiBind?.targetId).toBe('entity-AuthService');
+    expect(uiBind?.type).toBe('binds');
+  });
+
   it('parses exact user schema with single-indent or nested calls, without phantom return type calls', () => {
     const text = `class MainService
   public start(): Pi.help
