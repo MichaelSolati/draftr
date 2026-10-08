@@ -1,20 +1,21 @@
-import React, {useState, useRef, useEffect, useMemo} from 'react';
+import {type ArchitectureProject, type ParserDiagnostic} from '@draftr/core';
 import {
+  Activity,
   AlertCircle,
-  CheckCircle2,
-  Code2,
   Box,
+  CheckCircle2,
+  ChevronDown,
+  Code2,
   Database,
   Globe,
-  Zap,
   Layout,
-  Activity,
-  Plus,
-  ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  Plus,
+  Zap,
 } from 'lucide-react';
-import {type ArchitectureProject, type ParserDiagnostic} from '@draftr/core';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+
 import {CodeEditor} from './CodeEditor';
 
 interface QuickTextEditorProps {

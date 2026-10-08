@@ -1,18 +1,19 @@
-import {describe, it, expect, vi} from 'vitest';
-import {EditorState} from '@codemirror/state';
 import {CompletionContext} from '@codemirror/autocomplete';
 import {StringStream} from '@codemirror/language';
+import {EditorState} from '@codemirror/state';
+import type {ArchitectureProject} from '@draftr/core';
+import {describe, expect, it, vi} from 'vitest';
+
 import {
   computeDraftrIndent,
   createDraftrCompletions,
+  draftrShortcuts,
   draftrStreamLanguage,
   draftrStreamParser,
-  handleDraftrShortcut,
-  draftrShortcuts,
-  getDraftrHighlightStyle,
   getDraftrEditorTheme,
+  getDraftrHighlightStyle,
+  handleDraftrShortcut,
 } from '../draftrCodeMirror';
-import type {ArchitectureProject} from '@draftr/core';
 
 describe('draftrCodeMirror extensions', () => {
   describe('indentation computation', () => {

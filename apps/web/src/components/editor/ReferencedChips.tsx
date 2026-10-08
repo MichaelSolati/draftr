@@ -1,14 +1,14 @@
-import React from 'react';
+import {type ReferencedItem} from '@draftr/core';
 import {
+  ArrowUpRight,
   Box,
   Database,
   Globe,
-  Zap,
-  Layout,
   Layers,
-  ArrowUpRight,
+  Layout,
+  Zap,
 } from 'lucide-react';
-import {type ReferencedItem} from '@draftr/core';
+import React from 'react';
 
 interface ReferencedChipsProps {
   items: ReferencedItem[];

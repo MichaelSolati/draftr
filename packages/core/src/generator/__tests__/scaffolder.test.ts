@@ -1,6 +1,7 @@
-import {describe, it, expect} from 'vitest';
-import {generateProjectFiles} from '../scaffolder';
+import {describe, expect, it} from 'vitest';
+
 import {parseOutline} from '../../parser/parser';
+import {generateProjectFiles} from '../scaffolder';
 
 describe('Codebase Scaffolder', () => {
   it('generates services, UI components, and Prisma schemas', () => {

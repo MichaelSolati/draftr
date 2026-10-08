@@ -1,6 +1,7 @@
-import {describe, it, expect} from 'vitest';
+import {type Edge, type Node} from '@xyflow/react';
+import {describe, expect, it} from 'vitest';
+
 import {computeAutoLayout} from '../layout';
-import {type Node, type Edge} from '@xyflow/react';
 
 function createSampleGraph(): {nodes: Node[]; edges: Edge[]} {
   return {

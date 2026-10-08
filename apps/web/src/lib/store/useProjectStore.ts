@@ -1,22 +1,23 @@
-import {create} from 'zustand';
 import {
-  parseOutline,
-  lintArchitecture,
-  type ArchitectureProject,
-  type ParserDiagnostic,
   type ArchitectureLintIssue,
+  type ArchitectureProject,
+  lintArchitecture,
+  parseOutline,
+  type ParserDiagnostic,
 } from '@draftr/core';
-import {
-  getProject,
-  saveProject,
-  getActiveProjectId,
-  setActiveProjectId,
-} from '../storage/db';
+import {type Edge, type Node} from '@xyflow/react';
+import {create} from 'zustand';
+
 import {
   computeAutoLayout,
   type LayoutDirection,
 } from '../../components/canvas/layout';
-import {type Node, type Edge} from '@xyflow/react';
+import {
+  getActiveProjectId,
+  getProject,
+  saveProject,
+  setActiveProjectId,
+} from '../storage/db';
 
 export const DEFAULT_PROJECT_ID = 'default-project-1';
 

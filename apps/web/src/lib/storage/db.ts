@@ -1,5 +1,5 @@
-import {openDB, type IDBPDatabase} from 'idb';
 import {type ArchitectureProject} from '@draftr/core';
+import {type IDBPDatabase, openDB} from 'idb';
 
 const DB_NAME = 'draftr_db';
 const DB_VERSION = 1;

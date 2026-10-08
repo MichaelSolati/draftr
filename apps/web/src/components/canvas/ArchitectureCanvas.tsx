@@ -1,41 +1,43 @@
-import React, {useMemo, useCallback, useState, useEffect} from 'react';
-import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
-  MarkerType,
-  useNodesState,
-  useEdgesState,
-  useReactFlow,
-  ReactFlowProvider,
-  type Node,
-  type Edge,
-  type OnConnect,
-  type Connection,
-} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import {
-  Maximize2,
-  Focus,
-  Box,
-  Database,
-  Globe,
-  Zap,
-  Layout,
-  Layers,
-  Sparkles,
-} from 'lucide-react';
-import {computeAutoLayout, type LayoutDirection} from './layout';
-import {ClassNode} from './nodes/ClassNode';
-import {UINode} from './nodes/UINode';
-import {useTheme} from '../theme/ThemeProvider';
-import {TableNode} from './nodes/TableNode';
-import {ApiNode} from './nodes/ApiNode';
-import {EventNode} from './nodes/EventNode';
-import {StateNode} from './nodes/StateNode';
+
 import {type ArchitectureProject, type DomainType} from '@draftr/core';
 import {extractEntityRawSnippet} from '@draftr/core';
+import {
+  Background,
+  type Connection,
+  Controls,
+  type Edge,
+  MarkerType,
+  MiniMap,
+  type Node,
+  type OnConnect,
+  ReactFlow,
+  ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+} from '@xyflow/react';
+import {
+  Box,
+  Database,
+  Focus,
+  Globe,
+  Layers,
+  Layout,
+  Maximize2,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+
+import {useTheme} from '../theme/ThemeProvider';
+import {computeAutoLayout, type LayoutDirection} from './layout';
+import {ApiNode} from './nodes/ApiNode';
+import {ClassNode} from './nodes/ClassNode';
+import {EventNode} from './nodes/EventNode';
+import {StateNode} from './nodes/StateNode';
+import {TableNode} from './nodes/TableNode';
+import {UINode} from './nodes/UINode';
 
 const nodeTypes = {
   classNode: ClassNode,

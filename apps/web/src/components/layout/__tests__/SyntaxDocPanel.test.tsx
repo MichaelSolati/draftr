@@ -1,6 +1,7 @@
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {SyntaxDocPanel, HighlightedCodeSnippet} from '../SyntaxDocPanel';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {describe, expect, it, vi} from 'vitest';
+
+import {HighlightedCodeSnippet, SyntaxDocPanel} from '../SyntaxDocPanel';
 
 describe('SyntaxDocPanel', () => {
   it('returns null when isOpen is false', () => {

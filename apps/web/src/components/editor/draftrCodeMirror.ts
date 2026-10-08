@@ -1,17 +1,17 @@
 import {
-  StreamLanguage,
-  HighlightStyle,
-  indentService,
-  StringStream,
-} from '@codemirror/language';
-import {tags as t} from '@lezer/highlight';
-import {EditorView} from '@codemirror/view';
-import {type EditorState} from '@codemirror/state';
-import {
   type CompletionContext,
   type CompletionResult,
 } from '@codemirror/autocomplete';
+import {
+  HighlightStyle,
+  indentService,
+  StreamLanguage,
+  StringStream,
+} from '@codemirror/language';
+import {type EditorState} from '@codemirror/state';
+import {EditorView} from '@codemirror/view';
 import {type ArchitectureProject} from '@draftr/core';
+import {tags as t} from '@lezer/highlight';
 
 /**
  * StreamLanguage definition for draftr DSL

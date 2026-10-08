@@ -1,14 +1,15 @@
-import React, {useState} from 'react';
-import {
-  X,
-  Send,
-  Copy,
-  Check,
-  Sparkles,
-  AlertCircle,
-  CheckCircle2,
-} from 'lucide-react';
 import {type ArchitectureProject} from '@draftr/core';
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  Copy,
+  Send,
+  Sparkles,
+  X,
+} from 'lucide-react';
+import React, {useState} from 'react';
+
 import {
   formatClipboardPrompt,
   sendHandoffToLocalBridge,

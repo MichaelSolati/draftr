@@ -1,19 +1,20 @@
-import React, {useEffect, useMemo} from 'react';
+import {type ArchitectureProject} from '@draftr/core';
 import {PanelLeftOpen} from 'lucide-react';
-import {ThemeProvider} from './components/theme/ThemeProvider';
-import {TopNav} from './components/layout/TopNav';
-import {QuickTextEditor} from './components/editor/QuickTextEditor';
+import React, {useEffect, useMemo} from 'react';
+
+import {ClaudeHandoffModal} from './components/agent/ClaudeHandoffModal';
 import {ArchitectureCanvas} from './components/canvas/ArchitectureCanvas';
+import {QuickTextEditor} from './components/editor/QuickTextEditor';
 import {ExportModal} from './components/export/ExportModal';
 import {ImportModal} from './components/import/ImportModal';
-import {ScaffoldModal} from './components/scaffold/ScaffoldModal';
-import {ClaudeHandoffModal} from './components/agent/ClaudeHandoffModal';
-import {ProjectModal} from './components/workspace/ProjectModal';
-import {CommandPalette} from './components/palette/CommandPalette';
 import {SyntaxDocPanel} from './components/layout/SyntaxDocPanel';
-import {useProjectStore} from './lib/store/useProjectStore';
-import {type ArchitectureProject} from '@draftr/core';
+import {TopNav} from './components/layout/TopNav';
+import {CommandPalette} from './components/palette/CommandPalette';
+import {ScaffoldModal} from './components/scaffold/ScaffoldModal';
+import {ThemeProvider} from './components/theme/ThemeProvider';
+import {ProjectModal} from './components/workspace/ProjectModal';
 import {saveProject} from './lib/storage/db';
+import {useProjectStore} from './lib/store/useProjectStore';
 
 export const AppContent: React.FC = () => {
   const {

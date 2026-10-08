@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+import {exec} from 'node:child_process';
 import http from 'node:http';
 import net from 'node:net';
-import {exec} from 'node:child_process';
 
 const DEFAULT_PORT = 4318;
 const MAX_ATTEMPTS = 50;

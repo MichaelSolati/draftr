@@ -1,5 +1,5 @@
 import dagre from '@dagrejs/dagre';
-import {type Node, type Edge} from '@xyflow/react';
+import {type Edge, type Node} from '@xyflow/react';
 
 export type LayoutDirection = 'TB' | 'LR';
 

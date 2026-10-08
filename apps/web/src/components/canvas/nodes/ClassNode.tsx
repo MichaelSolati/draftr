@@ -1,14 +1,15 @@
-import React, {memo, useState} from 'react';
-import {Handle, Position, type NodeProps} from '@xyflow/react';
-import {Box, Lock, Unlock, Shield, Edit3, Check, X} from 'lucide-react';
 import {
+  type ArchitectureProject,
   type ClassSpec,
   type Visibility,
-  type ArchitectureProject,
 } from '@draftr/core';
+import {extractReferencedItems} from '@draftr/core';
+import {Handle, type NodeProps, Position} from '@xyflow/react';
+import {Box, Check, Edit3, Lock, Shield, Unlock, X} from 'lucide-react';
+import React, {memo, useState} from 'react';
+
 import {CodeEditor} from '../../editor/CodeEditor';
 import {ReferencedChips} from '../../editor/ReferencedChips';
-import {extractReferencedItems} from '@draftr/core';
 
 function renderVisibilityIcon(visibility: Visibility) {
   switch (visibility) {

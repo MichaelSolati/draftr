@@ -1,15 +1,16 @@
-import React from 'react';
 import {
-  Layers,
+  ChevronDown,
+  Code2,
+  Command,
   FileCode,
   FileInput,
-  Send,
   FolderGit2,
-  ChevronDown,
-  Command,
-  Code2,
   HelpCircle,
+  Layers,
+  Send,
 } from 'lucide-react';
+import React from 'react';
+
 import {ThemeToggle} from '../theme/ThemeToggle';
 
 interface TopNavProps {

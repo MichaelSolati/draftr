@@ -1,10 +1,11 @@
-import {describe, it, expect} from 'vitest';
+import {describe, expect, it} from 'vitest';
+
+import {parseOutline} from '../../parser/parser';
 import {
   exportToMermaidClassDiagram,
   exportToMermaidERDiagram,
   exportToMermaidFlowchart,
 } from '../mermaid';
-import {parseOutline} from '../../parser/parser';
 
 describe('Mermaid Exporter', () => {
   it('exports valid class diagram syntax', () => {

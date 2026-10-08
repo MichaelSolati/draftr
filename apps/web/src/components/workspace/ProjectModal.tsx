@@ -1,6 +1,7 @@
-import React, {useState, useEffect} from 'react';
-import {X, Plus, Trash2, FolderGit2, Check} from 'lucide-react';
-import {listProjects, deleteProject} from '../../lib/storage/db';
+import {Check, FolderGit2, Plus, Trash2, X} from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+
+import {deleteProject, listProjects} from '../../lib/storage/db';
 
 interface ProjectModalProps {
   isOpen: boolean;

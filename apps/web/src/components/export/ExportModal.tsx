@@ -1,11 +1,11 @@
-import React, {useState} from 'react';
-import {X, Copy, Check, Download, FileCode} from 'lucide-react';
 import {
   type ArchitectureProject,
   exportToMermaidClassDiagram,
   exportToMermaidERDiagram,
   exportToMermaidFlowchart,
 } from '@draftr/core';
+import {Check, Copy, Download, FileCode, X} from 'lucide-react';
+import React, {useState} from 'react';
 
 interface ExportModalProps {
   project: ArchitectureProject;

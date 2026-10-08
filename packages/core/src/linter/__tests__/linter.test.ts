@@ -1,6 +1,7 @@
-import {describe, it, expect} from 'vitest';
-import {lintArchitecture} from '../rules';
+import {describe, expect, it} from 'vitest';
+
 import {parseOutline} from '../../parser/parser';
+import {lintArchitecture} from '../rules';
 
 describe('Architecture Linter', () => {
   it('detects unresolved method targets', () => {

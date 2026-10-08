@@ -1,15 +1,16 @@
-import React, {useState, useMemo} from 'react';
-import {
-  X,
-  ChevronRight,
-  BookOpen,
-  ArrowRight,
-  Terminal,
-  Copy,
-  Check,
-  Palette,
-} from 'lucide-react';
 import {StringStream} from '@codemirror/language';
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  ChevronRight,
+  Copy,
+  Palette,
+  Terminal,
+  X,
+} from 'lucide-react';
+import React, {useMemo, useState} from 'react';
+
 import {draftrStreamParser} from '../editor/draftrCodeMirror';
 
 interface SyntaxDocPanelProps {

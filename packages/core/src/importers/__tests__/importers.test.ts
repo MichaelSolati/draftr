@@ -1,6 +1,7 @@
-import {describe, it, expect} from 'vitest';
-import {importTypeScriptToDSL} from '../typescript';
+import {describe, expect, it} from 'vitest';
+
 import {importSqlOrPrismaToDSL} from '../sql';
+import {importTypeScriptToDSL} from '../typescript';
 
 describe('Codebase Importers', () => {
   it('imports TypeScript classes and interfaces into DSL', () => {

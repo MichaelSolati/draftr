@@ -1,18 +1,19 @@
-import React, {useState, useEffect} from 'react';
 import {
-  Search,
   Box,
   Database,
-  Globe,
-  Zap,
-  Layout,
   FileCode,
+  FolderGit2,
+  Globe,
+  Layout,
+  Maximize2,
+  Moon,
+  Search,
   Send,
   Sun,
-  Moon,
-  FolderGit2,
-  Maximize2,
+  Zap,
 } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+
 import {useTheme} from '../theme/ThemeProvider';
 
 export interface CommandItem {

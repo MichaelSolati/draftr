@@ -1,10 +1,11 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import type {ArchitectureProject} from '@draftr/core';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+
 import {
   buildClaudeHandoffPayload,
   formatClipboardPrompt,
   sendHandoffToLocalBridge,
 } from '../handoff';
-import type {ArchitectureProject} from '@draftr/core';
 
 describe('handoff agent utilities', () => {
   const mockProject: ArchitectureProject = {

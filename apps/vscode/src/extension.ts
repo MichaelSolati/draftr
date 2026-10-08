@@ -1,5 +1,5 @@
+import {lintArchitecture, parseOutline} from '@draftr/core';
 import * as vscode from 'vscode';
-import {parseOutline, lintArchitecture} from '@draftr/core';
 
 export function activate(context: vscode.ExtensionContext) {
   const diagnosticCollection =

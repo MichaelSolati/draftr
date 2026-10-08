@@ -1,25 +1,26 @@
-import React, {useMemo} from 'react';
-import CodeMirror from '@uiw/react-codemirror';
-import {syntaxHighlighting, indentUnit} from '@codemirror/language';
+import {autocompletion} from '@codemirror/autocomplete';
+import {indentWithTab} from '@codemirror/commands';
+import {indentUnit, syntaxHighlighting} from '@codemirror/language';
 import {EditorState} from '@codemirror/state';
 import {keymap, lineNumbers} from '@codemirror/view';
-import {indentWithTab} from '@codemirror/commands';
-import {autocompletion} from '@codemirror/autocomplete';
 import {
   type ArchitectureProject,
-  type ParserDiagnostic,
   extractReferencedItems,
+  type ParserDiagnostic,
 } from '@draftr/core';
-import {ReferencedChips} from './ReferencedChips';
+import CodeMirror from '@uiw/react-codemirror';
+import React, {useMemo} from 'react';
+
 import {useTheme} from '../theme/ThemeProvider';
 import {
-  draftrStreamLanguage,
-  getDraftrHighlightStyle,
+  createDraftrCompletions,
   draftrIndentService,
   draftrShortcuts,
+  draftrStreamLanguage,
   getDraftrEditorTheme,
-  createDraftrCompletions,
+  getDraftrHighlightStyle,
 } from './draftrCodeMirror';
+import {ReferencedChips} from './ReferencedChips';
 
 export interface CodeEditorProps {
   value: string;

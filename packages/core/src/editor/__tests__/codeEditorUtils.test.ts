@@ -1,16 +1,17 @@
-import {describe, it, expect} from 'vitest';
+import {describe, expect, it} from 'vitest';
+
+import {type ArchitectureProject} from '../../types/spec';
 import {
   computeEnterIndent,
-  handleTabIndent,
-  handleBracketPair,
-  handleBackspaceBracket,
-  toggleLineComment,
+  extractEntityRawSnippet,
+  extractReferencedItems,
   getActiveTokenInfo,
   getAutocompleteSuggestions,
-  extractReferencedItems,
-  extractEntityRawSnippet,
+  handleBackspaceBracket,
+  handleBracketPair,
+  handleTabIndent,
+  toggleLineComment,
 } from '../codeEditorUtils';
-import {type ArchitectureProject} from '../../types/spec';
 
 describe('codeEditorUtils', () => {
   describe('computeEnterIndent', () => {

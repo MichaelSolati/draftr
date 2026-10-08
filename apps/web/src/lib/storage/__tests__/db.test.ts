@@ -1,13 +1,14 @@
-import {describe, it, expect, beforeEach} from 'vitest';
+import type {ArchitectureProject} from '@draftr/core';
+import {beforeEach, describe, expect, it} from 'vitest';
+
 import {
-  saveProject,
-  getProject,
-  listProjects,
   deleteProject,
   getActiveProjectId,
+  getProject,
+  listProjects,
+  saveProject,
   setActiveProjectId,
 } from '../db';
-import type {ArchitectureProject} from '@draftr/core';
 
 describe('IndexedDB storage', () => {
   const sampleProject: ArchitectureProject = {

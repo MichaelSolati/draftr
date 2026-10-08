@@ -1,7 +1,7 @@
-import React, {useState} from 'react';
-import {X, FileInput, Plus, RefreshCw, FileText} from 'lucide-react';
 import {importTypeScriptToDSL} from '@draftr/core';
 import {importSqlOrPrismaToDSL} from '@draftr/core';
+import {FileInput, FileText, Plus, RefreshCw, X} from 'lucide-react';
+import React, {useState} from 'react';
 
 interface ImportModalProps {
   isOpen: boolean;
