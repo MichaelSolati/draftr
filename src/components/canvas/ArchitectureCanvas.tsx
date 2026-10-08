@@ -262,18 +262,10 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
             ? `emits → ${conn.targetMember}()`
             : 'emits';
         } else if (isInvokes) {
-          strokeColor = '#f59e0b';
-          isAnimated = true;
-          dashArray = '6,3';
-          if (conn.sourceMember && conn.targetMember) {
-            edgeLabel = `${conn.sourceMember}() → ${conn.targetMember}()`;
-          } else if (conn.targetMember) {
-            edgeLabel = `calls ${conn.targetMember}()`;
-          } else if (conn.sourceMember) {
-            edgeLabel = `${conn.sourceMember}() calls`;
-          } else {
-            edgeLabel = 'calls';
-          }
+          strokeColor = '#0284c7';
+          dashArray = '5,5';
+          edgeLabel = 'calls';
+          isAnimated = false;
         }
 
         return {
