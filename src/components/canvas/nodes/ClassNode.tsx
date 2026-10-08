@@ -262,8 +262,16 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                     filteredProperties.map((prop, idx) => (
                       <div
                         key={`prop-${idx}`}
-                        className="flex items-center justify-between text-muted-foreground font-mono py-0.5 px-1 rounded hover:bg-muted/30 transition-colors"
+                        className="relative group flex items-center justify-between text-muted-foreground font-mono py-0.5 px-1 rounded hover:bg-muted/30 transition-colors"
                       >
+                        <Handle
+                          type="target"
+                          position={Position.Left}
+                          id={prop.name}
+                          className="!h-2 !w-2 !bg-sky-500 !border-2 !border-background shadow-sm"
+                          style={{left: -5}}
+                          title={`Target: ${spec.name}.${prop.name}`}
+                        />
                         <div className="flex items-center truncate mr-2">
                           {renderVisibilityIcon(prop.visibility)}
                           <span className="text-foreground truncate">
@@ -273,6 +281,14 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                         <span className="text-[11px] text-muted-foreground/80 shrink-0">
                           {prop.type}
                         </span>
+                        <Handle
+                          type="source"
+                          position={Position.Right}
+                          id={prop.name}
+                          className="!h-2 !w-2 !bg-sky-500 !border-2 !border-background shadow-sm"
+                          style={{right: -5}}
+                          title={`Source: ${spec.name}.${prop.name}`}
+                        />
                       </div>
                     ))
                   )}
@@ -303,8 +319,16 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                     filteredMethods.map((meth, idx) => (
                       <div
                         key={`meth-${idx}`}
-                        className="flex items-center justify-between text-muted-foreground font-mono py-0.5 px-1 rounded hover:bg-muted/30 transition-colors"
+                        className="relative group flex items-center justify-between text-muted-foreground font-mono py-0.5 px-1 rounded hover:bg-muted/30 transition-colors"
                       >
+                        <Handle
+                          type="target"
+                          position={Position.Left}
+                          id={meth.name}
+                          className="!h-2 !w-2 !bg-sky-500 !border-2 !border-background shadow-sm"
+                          style={{left: -5}}
+                          title={`Target: ${spec.name}.${meth.name}()`}
+                        />
                         <div className="flex items-center truncate mr-2">
                           {renderVisibilityIcon(meth.visibility)}
                           <span className="text-foreground font-medium truncate">
@@ -315,6 +339,14 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
                         <span className="text-[11px] text-primary/80 shrink-0">
                           {meth.returnType}
                         </span>
+                        <Handle
+                          type="source"
+                          position={Position.Right}
+                          id={meth.name}
+                          className="!h-2 !w-2 !bg-sky-500 !border-2 !border-background shadow-sm"
+                          style={{right: -5}}
+                          title={`Source: ${spec.name}.${meth.name}()`}
+                        />
                       </div>
                     ))
                   )}

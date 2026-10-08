@@ -316,4 +316,51 @@ class NotificationService
     expect(orderCalls[2].targetId).toBe('entity-NotificationService');
     expect(orderCalls[2].type).toBe('invokes');
   });
+
+  it('parses exact user schema with method-level calls, property return references, and binds', () => {
+    const text = `class MainService
+  public start(): Pi.help
+  public hi(): string
+    calls Pi.helpc()
+
+ui App
+  binds MainService
+
+class Pi
+  public help: string
+  public helpc(): Pi.help
+    calls Pi.helpc()
+`;
+    const result = parseOutline(text);
+
+    // 1. ui App -> MainService
+    const appBind = result.connections.find(c => c.sourceId === 'ui-App');
+    expect(appBind).toBeDefined();
+    expect(appBind?.targetId).toBe('entity-MainService');
+    expect(appBind?.type).toBe('binds');
+
+    // 2. MainService.start -> Pi.help
+    const startConn = result.connections.find(
+      c => c.sourceId === 'entity-MainService' && c.sourceMember === 'start'
+    );
+    expect(startConn).toBeDefined();
+    expect(startConn?.targetId).toBe('entity-Pi');
+    expect(startConn?.targetMember).toBe('help');
+
+    // 3. MainService.hi -> Pi.helpc
+    const hiConn = result.connections.find(
+      c => c.sourceId === 'entity-MainService' && c.sourceMember === 'hi'
+    );
+    expect(hiConn).toBeDefined();
+    expect(hiConn?.targetId).toBe('entity-Pi');
+    expect(hiConn?.targetMember).toBe('helpc');
+
+    // 4. Pi.helpc -> Pi.helpc (self-invocation)
+    const selfConn = result.connections.find(
+      c => c.sourceId === 'entity-Pi' && c.sourceMember === 'helpc'
+    );
+    expect(selfConn).toBeDefined();
+    expect(selfConn?.targetId).toBe('entity-Pi');
+    expect(selfConn?.targetMember).toBe('helpc');
+  });
 });

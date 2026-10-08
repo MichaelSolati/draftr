@@ -578,12 +578,47 @@ export function parseOutline(text: string): ParseResult {
           const returnType = methodMatch[4] ? methodMatch[4].trim() : 'void';
           const params = parseParameters(paramStr);
 
+          // If no inlineCall was specified, check if returnType references an external entity (e.g. Pi.help or Pi)
+          let refCall: {targetClass: string; targetMethod: string} | null =
+            null;
+          if (
+            !inlineCall &&
+            returnType &&
+            ![
+              'void',
+              'any',
+              'string',
+              'number',
+              'boolean',
+              'never',
+              'unknown',
+            ].includes(returnType)
+          ) {
+            const dotIdx = returnType.indexOf('.');
+            const refClass =
+              dotIdx !== -1 ? returnType.slice(0, dotIdx).trim() : returnType;
+            const refMember =
+              dotIdx !== -1
+                ? returnType
+                    .slice(dotIdx + 1)
+                    .trim()
+                    .replace(/\(\s*\)$/, '')
+                : '';
+            if (/^[A-Z]/.test(refClass) && refClass !== currentClass.name) {
+              refCall = {
+                targetClass: refClass,
+                targetMethod: refMember,
+              };
+            }
+          }
+
+          const callList = inlineCall ? [inlineCall] : refCall ? [refCall] : [];
           const methodSignature: MethodSignature = {
             name: methodName,
             visibility,
             parameters: params,
             returnType,
-            calls: inlineCall ? [inlineCall] : [],
+            calls: callList,
           };
           currentClass.methods.push(methodSignature);
           stack.push({
@@ -594,9 +629,10 @@ export function parseOutline(text: string): ParseResult {
             parentClassId: parent.id,
           });
 
-          if (inlineCall) {
+          const activeCall = inlineCall || refCall;
+          if (activeCall) {
             const targetId = resolveTargetEntityId(
-              inlineCall.targetClass,
+              activeCall.targetClass,
               classes,
               tables,
               apiRoutes,
@@ -604,11 +640,11 @@ export function parseOutline(text: string): ParseResult {
               states
             );
             connections.push({
-              id: `edge-${parent.id}-${methodName}->${inlineCall.targetClass}.${inlineCall.targetMethod}`,
+              id: `edge-${parent.id}-${methodName}->${activeCall.targetClass}${activeCall.targetMethod ? '.' + activeCall.targetMethod : ''}`,
               sourceId: parent.id,
               sourceMember: methodName,
               targetId,
-              targetMember: inlineCall.targetMethod,
+              targetMember: activeCall.targetMethod || undefined,
               type: 'invokes',
             });
           }
@@ -726,7 +762,13 @@ export function parseOutline(text: string): ParseResult {
           if (!parentMethod.calls) {
             parentMethod.calls = [];
           }
-          parentMethod.calls.push({targetClass, targetMethod});
+          const alreadyHasCall = parentMethod.calls.some(
+            c =>
+              c.targetClass === targetClass && c.targetMethod === targetMethod
+          );
+          if (!alreadyHasCall) {
+            parentMethod.calls.push({targetClass, targetMethod});
+          }
 
           const targetId = resolveTargetEntityId(
             targetClass,
@@ -737,14 +779,24 @@ export function parseOutline(text: string): ParseResult {
             states
           );
 
-          connections.push({
-            id: `edge-${parentClass.id}-${parentMethod.name}->${targetClass}.${targetMethod}`,
-            sourceId: parentClass.id,
-            sourceMember: parentMethod.name,
-            targetId,
-            targetMember: targetMethod || undefined,
-            type: 'invokes',
-          });
+          const alreadyHasConn = connections.some(
+            c =>
+              c.sourceId === parentClass.id &&
+              c.sourceMember === parentMethod.name &&
+              c.targetId === targetId &&
+              c.targetMember === (targetMethod || undefined)
+          );
+
+          if (!alreadyHasConn) {
+            connections.push({
+              id: `edge-${parentClass.id}-${parentMethod.name}->${targetClass}.${targetMethod}`,
+              sourceId: parentClass.id,
+              sourceMember: parentMethod.name,
+              targetId,
+              targetMember: targetMethod || undefined,
+              type: 'invokes',
+            });
+          }
           continue;
         }
       }

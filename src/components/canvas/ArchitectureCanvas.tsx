@@ -229,9 +229,7 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     return project.connections
       .filter(
         conn =>
-          conn.sourceId !== conn.targetId &&
-          visibleNodeIds.has(conn.sourceId) &&
-          visibleNodeIds.has(conn.targetId)
+          visibleNodeIds.has(conn.sourceId) && visibleNodeIds.has(conn.targetId)
       )
       .map(conn => {
         const isInvokes = conn.type === 'invokes';
@@ -268,10 +266,56 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
           isAnimated = false;
         }
 
+        // Validate and resolve sourceHandle if present
+        let sourceHandle: string | undefined = undefined;
+        if (conn.sourceMember) {
+          if (conn.sourceId.startsWith('entity-')) {
+            const cls = project.classes?.find(c => c.id === conn.sourceId);
+            if (cls) {
+              const hasMeth = cls.methods?.some(
+                m => m.name === conn.sourceMember
+              );
+              const hasProp = cls.properties?.some(
+                p => p.name === conn.sourceMember
+              );
+              if (hasMeth || hasProp) sourceHandle = conn.sourceMember;
+            }
+          } else if (conn.sourceId.startsWith('table-')) {
+            const tbl = project.tables?.find(t => t.id === conn.sourceId);
+            if (tbl && tbl.columns?.some(c => c.name === conn.sourceMember)) {
+              sourceHandle = conn.sourceMember;
+            }
+          }
+        }
+
+        // Validate and resolve targetHandle if present
+        let targetHandle: string | undefined = undefined;
+        if (conn.targetMember) {
+          if (conn.targetId.startsWith('entity-')) {
+            const cls = project.classes?.find(c => c.id === conn.targetId);
+            if (cls) {
+              const hasMeth = cls.methods?.some(
+                m => m.name === conn.targetMember
+              );
+              const hasProp = cls.properties?.some(
+                p => p.name === conn.targetMember
+              );
+              if (hasMeth || hasProp) targetHandle = conn.targetMember;
+            }
+          } else if (conn.targetId.startsWith('table-')) {
+            const tbl = project.tables?.find(t => t.id === conn.targetId);
+            if (tbl && tbl.columns?.some(c => c.name === conn.targetMember)) {
+              targetHandle = conn.targetMember;
+            }
+          }
+        }
+
         return {
           id: conn.id,
           source: conn.sourceId,
+          sourceHandle,
           target: conn.targetId,
+          targetHandle,
           animated: isAnimated,
           type: 'smoothstep',
           pathOptions: {
