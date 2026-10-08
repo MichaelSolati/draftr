@@ -269,6 +269,29 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       // Otherwise, let default space behavior work smoothly between words!
     }
 
+    // 4c. +/- Shortcuts for public/private when starting a member definition
+    if (e.key === '+' || e.key === '-') {
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      const linePrefix = value.substring(lineStart, start);
+      // If the line only has whitespace (indentation) so far, typing + expands to "public " and - expands to "private "
+      if (linePrefix.trim() === '') {
+        e.preventDefault();
+        const expandedText = e.key === '+' ? 'public ' : 'private ';
+        const newValue =
+          value.substring(0, start) + expandedText + value.substring(end);
+        onChange(newValue);
+        const newCursor = start + expandedText.length;
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart =
+              textareaRef.current.selectionEnd = newCursor;
+            updateSuggestions(newValue, newCursor);
+          }
+        }, 0);
+        return;
+      }
+    }
+
     // 5. Enter Key: Smart Indentation
     if (e.key === 'Enter') {
       e.preventDefault();

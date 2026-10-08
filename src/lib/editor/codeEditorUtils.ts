@@ -545,9 +545,21 @@ export function getAutocompleteSuggestions(
   // 2b. Line start suggestions (for members: +, -, #, public, private, protected, readonly)
   if (tokenInfo.isLineStart) {
     const memberModifiers = [
-      {label: '+ (public)', insertText: '+ ', detail: 'Public member'},
-      {label: '- (private)', insertText: '- ', detail: 'Private member'},
-      {label: '# (protected)', insertText: '# ', detail: 'Protected member'},
+      {
+        label: '+ (public)',
+        insertText: 'public ',
+        detail: 'Shortcut for public',
+      },
+      {
+        label: '- (private)',
+        insertText: 'private ',
+        detail: 'Shortcut for private',
+      },
+      {
+        label: '# (protected)',
+        insertText: 'protected ',
+        detail: 'Shortcut for protected',
+      },
       {label: 'public', insertText: 'public ', detail: 'Public modifier'},
       {label: 'private', insertText: 'private ', detail: 'Private modifier'},
       {
