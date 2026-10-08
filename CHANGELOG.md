@@ -1,3 +1,9 @@
+## [0.1.2](https://github.com/MichaelSolati/draftr/compare/v0.1.1...v0.1.2) (2026-10-08)
+
+### Features
+
+* use bumpp for synchronized recursive monorepo version bumping ([bdb75a5](https://github.com/MichaelSolati/draftr/commit/bdb75a50e2b7822fa437ccdbde7d2f4ae4a15b4b))
+
 ## 0.1.1 (2026-10-08)
 
 ### Features
