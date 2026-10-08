@@ -232,6 +232,22 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       return;
     }
 
+    // 4b. Space Key: Force everything into tabs (no spaces; spaces are treated like tabs)
+    if (e.key === ' ') {
+      e.preventDefault();
+      // Replace selection or cursor with a single Tab character
+      const newValue = value.substring(0, start) + '\t' + value.substring(end);
+      onChange(newValue);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart =
+            textareaRef.current.selectionEnd = start + 1;
+          updateSuggestions(newValue, start + 1);
+        }
+      }, 0);
+      return;
+    }
+
     // 5. Enter Key: Smart Indentation
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -337,7 +353,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       )}
 
       {/* Main Editing Surface */}
-      <div className="flex-1 relative flex overflow-hidden">
+      <div
+        className={`flex-1 relative flex ${
+          showLineNumbers ? 'overflow-hidden' : 'overflow-visible'
+        }`}
+      >
         {/* Line Numbers Gutter */}
         {showLineNumbers && (
           <div

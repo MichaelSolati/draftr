@@ -67,12 +67,39 @@ export const DSL_KEYWORDS = [
 ];
 
 /**
- * Compute indentation for new line on Enter press.
+ * Normalize leading spaces to tabs on any indentation string.
+ * Every 2 spaces (or lone space) becomes a tab.
+ */
+export function normalizeToTabs(indentStr: string): string {
+  let tabs = 0;
+  let spaces = 0;
+  for (let i = 0; i < indentStr.length; i++) {
+    const ch = indentStr[i];
+    if (ch === '\t') {
+      tabs += Math.floor(spaces / 2) + 1;
+      spaces = 0;
+    } else if (ch === ' ') {
+      spaces++;
+      if (spaces === 2) {
+        tabs++;
+        spaces = 0;
+      }
+    }
+  }
+  if (spaces > 0) {
+    tabs++;
+  }
+  return '\t'.repeat(tabs);
+}
+
+/**
+ * Compute indentation for new line on Enter press using pure tabs.
  * Automatically indents when completing a block header or nesting invocations.
  */
 export function computeEnterIndent(currentLine: string): string {
   const match = currentLine.match(/^(\s*)/);
-  const currentIndent = match ? match[1] : '';
+  const rawIndent = match ? match[1] : '';
+  const currentIndent = normalizeToTabs(rawIndent);
   const trimmed = currentLine.trim();
 
   // If blank line, preserve current indent
@@ -86,16 +113,14 @@ export function computeEnterIndent(currentLine: string): string {
     trimmed.endsWith(':') ||
     trimmed.endsWith('{')
   ) {
-    return currentIndent + '  ';
+    return currentIndent + '\t';
   }
 
   // Method declaration: + methodName(...): ReturnType
-  // If user hits Enter on a method, check if they intend to write sub-bullets or next member
-  // If it's a method header without sub-bullets yet, we can keep indent (or if it ends with '->', add 2 spaces)
   if (/^[+#\\-]\s*[A-Za-z0-9_$]+\s*\(.*?\)/.test(trimmed)) {
     // If it ends with -> or calls, indent sub-bullet
     if (trimmed.endsWith('->') || trimmed.endsWith('calls')) {
-      return currentIndent + '  ';
+      return currentIndent + '\t';
     }
   }
 
@@ -108,7 +133,7 @@ export function computeEnterIndent(currentLine: string): string {
 }
 
 /**
- * Handle Tab and Shift-Tab block indentation across single or multiple lines.
+ * Handle Tab and Shift-Tab block indentation across single or multiple lines using tabs.
  */
 export function handleTabIndent(
   value: string,
@@ -119,13 +144,13 @@ export function handleTabIndent(
   const isMultiLine = value.slice(selectionStart, selectionEnd).includes('\n');
 
   if (!isMultiLine && !isShift) {
-    // Single cursor / single-line tab insertion: insert 2 spaces
+    // Single cursor / single-line tab insertion: insert 1 tab character
     const newValue =
-      value.substring(0, selectionStart) + '  ' + value.substring(selectionEnd);
+      value.substring(0, selectionStart) + '\t' + value.substring(selectionEnd);
     return {
       newValue,
-      newStart: selectionStart + 2,
-      newEnd: selectionStart + 2,
+      newStart: selectionStart + 1,
+      newEnd: selectionStart + 1,
     };
   }
 
@@ -137,19 +162,21 @@ export function handleTabIndent(
   const lines = value.slice(lineStart, lineEnd).split('\n');
 
   if (isShift) {
-    // Outdent: remove up to 2 leading spaces from each line
+    // Outdent: remove 1 leading tab or up to 2 leading spaces from each line
     let removedChars = 0;
     let firstLineRemoved = 0;
     const modifiedLines = lines.map((line, idx) => {
-      let spacesToRemove = 0;
-      if (line.startsWith('  ')) {
-        spacesToRemove = 2;
+      let charsToRemove = 0;
+      if (line.startsWith('\t')) {
+        charsToRemove = 1;
+      } else if (line.startsWith('  ')) {
+        charsToRemove = 2;
       } else if (line.startsWith(' ')) {
-        spacesToRemove = 1;
+        charsToRemove = 1;
       }
-      removedChars += spacesToRemove;
-      if (idx === 0) firstLineRemoved = spacesToRemove;
-      return line.slice(spacesToRemove);
+      removedChars += charsToRemove;
+      if (idx === 0) firstLineRemoved = charsToRemove;
+      return line.slice(charsToRemove);
     });
 
     const newValue =
@@ -162,9 +189,9 @@ export function handleTabIndent(
 
     return {newValue, newStart, newEnd};
   } else {
-    // Indent: add 2 leading spaces to each line
-    const addedChars = lines.length * 2;
-    const modifiedLines = lines.map(line => '  ' + line);
+    // Indent: add 1 tab to each line
+    const addedChars = lines.length;
+    const modifiedLines = lines.map(line => '\t' + line);
 
     const newValue =
       value.substring(0, lineStart) +
@@ -173,7 +200,7 @@ export function handleTabIndent(
 
     return {
       newValue,
-      newStart: selectionStart + 2,
+      newStart: selectionStart + 1,
       newEnd: selectionEnd + addedChars,
     };
   }
@@ -352,9 +379,9 @@ export function getActiveTokenInfo(
   const match = line.match(/([A-Za-z0-9_$.]+)$/);
   const prefix = match ? match[1] : '';
 
-  const isAfterArrowOrCall = /(->|calls|-)\s*[A-Za-z0-9_$.]*$/.test(line);
-  const isAfterColon = /:\s*[A-Za-z0-9_$.]*$/.test(line);
-  const isSubBullet = /^\s*(-|->|calls)\s+/.test(line);
+  const isAfterArrowOrCall = /(->|calls|-)[ \t]*[A-Za-z0-9_$.]*$/.test(line);
+  const isAfterColon = /:[ \t]*[A-Za-z0-9_$.]*$/.test(line);
+  const isSubBullet = /^[ \t]*(-|->|calls)[ \t]+/.test(line);
 
   return {
     prefix,

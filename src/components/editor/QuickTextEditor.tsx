@@ -223,7 +223,9 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
           <span>{entityCount.ui} UI nodes</span>
           <span>{entityCount.connections} wires</span>
         </div>
-        <div className="text-[10px]">Indentation: 2 spaces</div>
+        <div className="text-[10px] font-medium text-primary">
+          Indentation: Tabs
+        </div>
       </div>
     </div>
   );

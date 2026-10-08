@@ -15,44 +15,44 @@ import {type ArchitectureProject} from '../../../types/spec';
 describe('codeEditorUtils', () => {
   describe('computeEnterIndent', () => {
     it('indents after class declaration', () => {
-      expect(computeEnterIndent('class AuthService')).toBe('  ');
+      expect(computeEnterIndent('class AuthService')).toBe('\t');
     });
 
     it('indents after ui declaration', () => {
-      expect(computeEnterIndent('  ui Header')).toBe('    ');
+      expect(computeEnterIndent('\tui Header')).toBe('\t\t');
     });
 
     it('indents after arrow call if ends with arrow', () => {
-      expect(computeEnterIndent('  + execute(): void ->')).toBe('    ');
+      expect(computeEnterIndent('\t+ execute(): void ->')).toBe('\t\t');
     });
 
     it('preserves existing indent on normal member line', () => {
-      expect(computeEnterIndent('  + login(creds: Credentials): Session')).toBe(
-        '  '
+      expect(computeEnterIndent('\t+ login(creds: Credentials): Session')).toBe(
+        '\t'
       );
     });
 
     it('preserves indent on sub-bullet invocation line', () => {
-      expect(computeEnterIndent('    -> TokenService.sign')).toBe('    ');
+      expect(computeEnterIndent('\t\t-> TokenService.sign')).toBe('\t\t');
     });
   });
 
   describe('handleTabIndent', () => {
-    it('inserts two spaces on single line without selection', () => {
+    it('inserts a tab on single line without selection', () => {
       const res = handleTabIndent('class Foo\n', 9, 9, false);
-      expect(res.newValue).toBe('class Foo  \n');
-      expect(res.newStart).toBe(11);
+      expect(res.newValue).toBe('class Foo\t\n');
+      expect(res.newStart).toBe(10);
     });
 
     it('indents multiple lines when selected', () => {
       const input = 'line1\nline2';
       const res = handleTabIndent(input, 0, 11, false);
-      expect(res.newValue).toBe('  line1\n  line2');
+      expect(res.newValue).toBe('\tline1\n\tline2');
     });
 
     it('outdents multiple lines with shift key', () => {
-      const input = '  line1\n  line2';
-      const res = handleTabIndent(input, 0, 15, true);
+      const input = '\tline1\n\tline2';
+      const res = handleTabIndent(input, 0, 13, true);
       expect(res.newValue).toBe('line1\nline2');
     });
   });

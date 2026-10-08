@@ -61,6 +61,34 @@ function parseParameters(paramStr: string): MethodParameter[] {
   return params;
 }
 
+/**
+ * Calculate line indentation where spaces are converted to tabs (every 2 spaces or 1 tab = 1 tab level).
+ */
+export function computeLineIndentTabs(line: string): number {
+  let indentLevel = 0;
+  let spaces = 0;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '\t') {
+      indentLevel += Math.floor(spaces / 2) + 1;
+      spaces = 0;
+    } else if (ch === ' ') {
+      spaces++;
+      if (spaces === 2) {
+        indentLevel++;
+        spaces = 0;
+      }
+    } else {
+      break;
+    }
+  }
+  if (spaces > 0) {
+    indentLevel++;
+  }
+  return indentLevel;
+}
+
 export function parseOutline(text: string): ParseResult {
   const lines = text.split('\n');
   const classes: ClassSpec[] = [];
@@ -90,7 +118,7 @@ export function parseOutline(text: string): ParseResult {
       continue;
     }
 
-    const indent = rawLine.search(/\S/);
+    const indent = computeLineIndentTabs(rawLine);
     const trimmed = rawLine.trim();
 
     while (stack.length > 0 && stack[stack.length - 1].indent >= indent) {

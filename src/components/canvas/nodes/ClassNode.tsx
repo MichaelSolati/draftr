@@ -119,7 +119,11 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
   return (
     <div
       onDoubleClick={!isEditing ? handleStartEdit : undefined}
-      className="min-w-[280px] max-w-[380px] rounded-lg border border-border bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-hidden"
+      className={`min-w-[280px] max-w-[380px] rounded-lg border border-border bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs ${
+        isEditing
+          ? 'overflow-visible z-50 ring-2 ring-primary/40'
+          : 'overflow-hidden'
+      }`}
     >
       {/* Node Header */}
       <div className="flex items-center justify-between border-b border-border bg-muted/60 px-3 py-2">
@@ -175,8 +179,8 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
 
       {/* Inline Shared CodeEditor Mode */}
       {isEditing ? (
-        <div className="p-2 bg-background font-mono text-[11px] space-y-1.5 nodrag">
-          <div className="border border-primary/40 rounded overflow-hidden max-h-64">
+        <div className="p-2 bg-background font-mono text-[11px] space-y-1.5 nodrag overflow-visible relative">
+          <div className="border border-primary/40 rounded overflow-visible relative">
             <CodeEditor
               value={editText}
               onChange={setEditText}

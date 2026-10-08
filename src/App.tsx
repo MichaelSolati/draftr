@@ -10,6 +10,7 @@ import {ScaffoldModal} from './components/scaffold/ScaffoldModal';
 import {ClaudeHandoffModal} from './components/agent/ClaudeHandoffModal';
 import {ProjectModal} from './components/workspace/ProjectModal';
 import {CommandPalette} from './components/palette/CommandPalette';
+import {SyntaxDocPanel} from './components/layout/SyntaxDocPanel';
 import {parseOutline} from './lib/parser/parser';
 import {lintArchitecture} from './lib/linter/rules';
 import {
@@ -85,6 +86,7 @@ export const AppContent: React.FC = () => {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [isEditorMinimized, setIsEditorMinimized] = useState(false);
+  const [isSyntaxDocsOpen, setIsSyntaxDocsOpen] = useState(false);
   const [nodePositions, setNodePositions] = useState<
     Record<string, {x: number; y: number}>
   >({});
@@ -396,6 +398,8 @@ export const AppContent: React.FC = () => {
         onOpenScaffoldModal={() => setIsScaffoldOpen(true)}
         onOpenClaudeModal={() => setIsClaudeOpen(true)}
         onOpenPalette={() => setIsPaletteOpen(true)}
+        isSyntaxDocsOpen={isSyntaxDocsOpen}
+        onToggleSyntaxDocs={() => setIsSyntaxDocsOpen(prev => !prev)}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -435,7 +439,7 @@ export const AppContent: React.FC = () => {
           </div>
         )}
 
-        {/* Right: Architecture Visual Canvas */}
+        {/* Center / Right: Architecture Visual Canvas */}
         <div className="flex-1 h-full overflow-hidden">
           <ArchitectureCanvas
             project={currentProjectWithPositions}
@@ -447,6 +451,13 @@ export const AppContent: React.FC = () => {
             selectedEntityId={selectedEntityId}
           />
         </div>
+
+        {/* Right: Syntax Documentation Panel (Starts closed always) */}
+        <SyntaxDocPanel
+          isOpen={isSyntaxDocsOpen}
+          onClose={() => setIsSyntaxDocsOpen(false)}
+          onInsertSnippet={handleInsertSnippet}
+        />
       </div>
 
       {/* Modals & Command Palette */}

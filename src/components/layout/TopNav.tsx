@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Command,
   Code2,
+  HelpCircle,
 } from 'lucide-react';
 import {ThemeToggle} from '../theme/ThemeToggle';
 
@@ -19,6 +20,8 @@ interface TopNavProps {
   onOpenScaffoldModal: () => void;
   onOpenClaudeModal: () => void;
   onOpenPalette: () => void;
+  onToggleSyntaxDocs?: () => void;
+  isSyntaxDocsOpen?: boolean;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -29,6 +32,8 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenScaffoldModal,
   onOpenClaudeModal,
   onOpenPalette,
+  onToggleSyntaxDocs,
+  isSyntaxDocsOpen = false,
 }) => {
   return (
     <header className="h-12 border-b border-border bg-card text-card-foreground px-4 flex items-center justify-between shrink-0 select-none z-30">
@@ -105,6 +110,22 @@ export const TopNav: React.FC<TopNavProps> = ({
           <Send className="h-3.5 w-3.5" />
           <span>Send to Claude</span>
         </button>
+
+        {onToggleSyntaxDocs && (
+          <button
+            type="button"
+            onClick={onToggleSyntaxDocs}
+            title="Toggle DSL Syntax & Calling Guide"
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors ${
+              isSyntaxDocsOpen
+                ? 'bg-primary/10 border-primary/40 text-primary'
+                : 'border-border bg-background hover:bg-muted text-foreground'
+            }`}
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Syntax Guide</span>
+          </button>
+        )}
 
         <div className="h-4 w-[1px] bg-border mx-1" />
 
