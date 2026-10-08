@@ -2,9 +2,11 @@ import {
   StreamLanguage,
   HighlightStyle,
   indentService,
+  StringStream,
 } from '@codemirror/language';
 import {tags as t} from '@lezer/highlight';
 import {EditorView} from '@codemirror/view';
+import {type EditorState} from '@codemirror/state';
 import {
   type CompletionContext,
   type CompletionResult,
@@ -14,7 +16,7 @@ import {type ArchitectureProject} from '@arch-spec/core';
 /**
  * StreamLanguage definition for ArchSpec DSL
  */
-export const archSpecStreamLanguage = StreamLanguage.define({
+export const archSpecStreamParser = {
   tokenTable: {
     keyword: t.keyword,
     action: t.controlKeyword,
@@ -26,7 +28,7 @@ export const archSpecStreamLanguage = StreamLanguage.define({
     comment: t.lineComment,
     string: t.string,
   },
-  token(stream): string | null {
+  token(stream: StringStream): string | null {
     if (stream.eatSpace()) return null;
 
     // 1. Comments
@@ -64,14 +66,14 @@ export const archSpecStreamLanguage = StreamLanguage.define({
         return 'action';
       }
 
-      // Modifiers
-      if (/^(public|private|protected|readonly|get|set)$/i.test(str)) {
-        return 'modifier';
-      }
-
       // HTTP Verbs
       if (/^(GET|POST|PUT|DELETE|PATCH)$/i.test(str)) {
         return 'keyword';
+      }
+
+      // Modifiers
+      if (/^(public|private|protected|readonly|get|set)$/i.test(str)) {
+        return 'modifier';
       }
 
       // Database modifiers
@@ -110,7 +112,10 @@ export const archSpecStreamLanguage = StreamLanguage.define({
     stream.next();
     return null;
   },
-});
+};
+
+export const archSpecStreamLanguage =
+  StreamLanguage.define(archSpecStreamParser);
 
 /**
  * Token colors matching our design system
@@ -129,16 +134,9 @@ export const archSpecHighlightStyle = HighlightStyle.define([
   {tag: t.variableName, color: '#e2e8f0'},
 ]);
 
-/**
- * Custom indentation logic for 3-tier hierarchy:
- * 1) Class -> 2 spaces
- * 2) Method/Property -> 4 spaces
- * 3) Call -> 4 spaces
- */
-export const archSpecIndentService = indentService.of((context, pos) => {
-  const prevLine = context.lineAt(pos, -1);
-  const trimmed = prevLine.text.trim();
-  const currentIndent = (prevLine.text.match(/^(\s*)/)?.[1] || '').length;
+export function computeArchSpecIndent(prevLineText: string): number {
+  const trimmed = prevLineText.trim();
+  const currentIndent = (prevLineText.match(/^(\s*)/)?.[1] || '').length;
 
   if (!trimmed) {
     return currentIndent;
@@ -168,27 +166,51 @@ export const archSpecIndentService = indentService.of((context, pos) => {
   }
 
   return currentIndent;
+}
+
+/**
+ * Custom indentation logic for 3-tier hierarchy:
+ * 1) Class -> 2 spaces
+ * 2) Method/Property -> 4 spaces
+ * 3) Call -> 4 spaces
+ */
+export const archSpecIndentService = indentService.of((context, pos) => {
+  const prevLine = context.lineAt(pos, -1);
+  return computeArchSpecIndent(prevLine.text);
 });
+
+export function handleArchSpecShortcut(
+  view: {
+    state: EditorState;
+    dispatch: (tr: {
+      changes: {from: number; to: number; insert: string};
+      selection: {anchor: number};
+    }) => void;
+  },
+  from: number,
+  to: number,
+  text: string
+): boolean {
+  if (text === '+' || text === '-') {
+    const line = view.state.doc.lineAt(from);
+    const prefix = view.state.doc.sliceString(line.from, from);
+    if (prefix.trim() === '') {
+      const expansion = text === '+' ? 'public ' : 'private ';
+      view.dispatch({
+        changes: {from, to, insert: expansion},
+        selection: {anchor: from + expansion.length},
+      });
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Shortcut: Typing '+' at empty line expands to 'public ', '-' expands to 'private '
  */
 export const archSpecShortcuts = EditorView.inputHandler.of(
-  (view, from, to, text) => {
-    if (text === '+' || text === '-') {
-      const line = view.state.doc.lineAt(from);
-      const prefix = view.state.doc.sliceString(line.from, from);
-      if (prefix.trim() === '') {
-        const expansion = text === '+' ? 'public ' : 'private ';
-        view.dispatch({
-          changes: {from, to, insert: expansion},
-          selection: {anchor: from + expansion.length},
-        });
-        return true;
-      }
-    }
-    return false;
-  }
+  (view, from, to, text) => handleArchSpecShortcut(view, from, to, text)
 );
 
 /**

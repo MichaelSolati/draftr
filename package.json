@@ -10,8 +10,8 @@
   "scripts": {
     "dev": "npm run dev --workspace=@arch-spec/web",
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspace=@arch-spec/core",
-    "coverage": "npm run coverage --workspace=@arch-spec/core",
+    "test": "npm run test --workspaces --if-present",
+    "coverage": "npm run coverage --workspaces --if-present",
     "lint": "run-p lint:*",
     "lint:typescript": "npx tsc -p packages/core/tsconfig.json --noEmit && npx tsc -p apps/web/tsconfig.json --noEmit && npx tsc -p apps/vscode/tsconfig.json --noEmit",
     "lint:gts": "gts lint",
