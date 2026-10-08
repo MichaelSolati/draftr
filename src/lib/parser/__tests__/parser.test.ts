@@ -317,11 +317,11 @@ class NotificationService
     expect(orderCalls[2].type).toBe('invokes');
   });
 
-  it('parses exact user schema with method-level calls, property return references, and binds', () => {
+  it('parses exact user schema with single-indent or nested calls, without phantom return type calls', () => {
     const text = `class MainService
   public start(): Pi.help
   public hi(): string
-    calls Pi.helpc()
+  calls Pi.helpc()
 
 ui App
   binds MainService
@@ -329,7 +329,7 @@ ui App
 class Pi
   public help: string
   public helpc(): Pi.help
-    calls Pi.helpc()
+  calls Pi.helpc()
 `;
     const result = parseOutline(text);
 
@@ -339,15 +339,16 @@ class Pi
     expect(appBind?.targetId).toBe('entity-MainService');
     expect(appBind?.type).toBe('binds');
 
-    // 2. MainService.start -> Pi.help
+    // 2. MainService.start has returnType Pi.help, but does NOT create a phantom call edge
+    const mainService = result.classes.find(c => c.name === 'MainService');
+    const startMethod = mainService?.methods.find(m => m.name === 'start');
+    expect(startMethod?.returnType).toBe('Pi.help');
     const startConn = result.connections.find(
       c => c.sourceId === 'entity-MainService' && c.sourceMember === 'start'
     );
-    expect(startConn).toBeDefined();
-    expect(startConn?.targetId).toBe('entity-Pi');
-    expect(startConn?.targetMember).toBe('help');
+    expect(startConn).toBeUndefined();
 
-    // 3. MainService.hi -> Pi.helpc
+    // 3. MainService.hi -> Pi.helpc (attached via single indent without needing double indent)
     const hiConn = result.connections.find(
       c => c.sourceId === 'entity-MainService' && c.sourceMember === 'hi'
     );
@@ -355,7 +356,13 @@ class Pi
     expect(hiConn?.targetId).toBe('entity-Pi');
     expect(hiConn?.targetMember).toBe('helpc');
 
-    // 4. Pi.helpc -> Pi.helpc (self-invocation)
+    // Exactly 1 connection between MainService and Pi
+    const mainToPiConns = result.connections.filter(
+      c => c.sourceId === 'entity-MainService' && c.targetId === 'entity-Pi'
+    );
+    expect(mainToPiConns).toHaveLength(1);
+
+    // 4. Pi.helpc -> Pi.helpc (self-invocation via single indent)
     const selfConn = result.connections.find(
       c => c.sourceId === 'entity-Pi' && c.sourceMember === 'helpc'
     );

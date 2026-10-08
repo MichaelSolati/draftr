@@ -578,41 +578,7 @@ export function parseOutline(text: string): ParseResult {
           const returnType = methodMatch[4] ? methodMatch[4].trim() : 'void';
           const params = parseParameters(paramStr);
 
-          // If no inlineCall was specified, check if returnType references an external entity (e.g. Pi.help or Pi)
-          let refCall: {targetClass: string; targetMethod: string} | null =
-            null;
-          if (
-            !inlineCall &&
-            returnType &&
-            ![
-              'void',
-              'any',
-              'string',
-              'number',
-              'boolean',
-              'never',
-              'unknown',
-            ].includes(returnType)
-          ) {
-            const dotIdx = returnType.indexOf('.');
-            const refClass =
-              dotIdx !== -1 ? returnType.slice(0, dotIdx).trim() : returnType;
-            const refMember =
-              dotIdx !== -1
-                ? returnType
-                    .slice(dotIdx + 1)
-                    .trim()
-                    .replace(/\(\s*\)$/, '')
-                : '';
-            if (/^[A-Z]/.test(refClass) && refClass !== currentClass.name) {
-              refCall = {
-                targetClass: refClass,
-                targetMethod: refMember,
-              };
-            }
-          }
-
-          const callList = inlineCall ? [inlineCall] : refCall ? [refCall] : [];
+          const callList = inlineCall ? [inlineCall] : [];
           const methodSignature: MethodSignature = {
             name: methodName,
             visibility,
@@ -629,10 +595,9 @@ export function parseOutline(text: string): ParseResult {
             parentClassId: parent.id,
           });
 
-          const activeCall = inlineCall || refCall;
-          if (activeCall) {
+          if (inlineCall) {
             const targetId = resolveTargetEntityId(
-              activeCall.targetClass,
+              inlineCall.targetClass,
               classes,
               tables,
               apiRoutes,
@@ -640,11 +605,11 @@ export function parseOutline(text: string): ParseResult {
               states
             );
             connections.push({
-              id: `edge-${parent.id}-${methodName}->${activeCall.targetClass}${activeCall.targetMethod ? '.' + activeCall.targetMethod : ''}`,
+              id: `edge-${parent.id}-${methodName}->${inlineCall.targetClass}${inlineCall.targetMethod ? '.' + inlineCall.targetMethod : ''}`,
               sourceId: parent.id,
               sourceMember: methodName,
               targetId,
-              targetMember: activeCall.targetMethod || undefined,
+              targetMember: inlineCall.targetMethod || undefined,
               type: 'invokes',
             });
           }
@@ -675,12 +640,14 @@ export function parseOutline(text: string): ParseResult {
 
       // Direct class dependency / call: calls Target, -> Target, or binds Target
       const callMatch = trimmed.match(
-        /^(?:calls|invokes|->|binds)\s+([A-Za-z0-9_$.]+)/i
+        /^(calls|invokes|->|binds)\s+([A-Za-z0-9_$.]+)/i
       );
       if (callMatch) {
-        const targetStr = callMatch[1].trim();
+        const keyword = callMatch[1].toLowerCase();
+        const isBinds = keyword === 'binds';
+        const targetStr = callMatch[2].trim();
         const dotIdx = targetStr.indexOf('.');
-        const targetClass =
+        let targetClass =
           dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
         const targetMethod =
           dotIdx !== -1
@@ -689,6 +656,18 @@ export function parseOutline(text: string): ParseResult {
                 .trim()
                 .replace(/\(\s*\)$/, '')
             : '';
+
+        if (
+          targetClass.toLowerCase() === 'this' ||
+          targetClass.toLowerCase() === 'self'
+        ) {
+          targetClass = currentClass.name;
+        }
+
+        const lastMethod =
+          !isBinds && currentClass.methods.length > 0
+            ? currentClass.methods[currentClass.methods.length - 1]
+            : null;
 
         const targetId = resolveTargetEntityId(
           targetClass,
@@ -699,13 +678,45 @@ export function parseOutline(text: string): ParseResult {
           states
         );
 
-        connections.push({
-          id: `edge-${currentClass.id}-calls->${targetClass}${targetMethod ? '.' + targetMethod : ''}`,
-          sourceId: currentClass.id,
-          targetId,
-          targetMember: targetMethod || undefined,
-          type: 'invokes',
-        });
+        if (lastMethod) {
+          if (!lastMethod.calls) {
+            lastMethod.calls = [];
+          }
+          const alreadyHasCall = lastMethod.calls.some(
+            c =>
+              c.targetClass === targetClass && c.targetMethod === targetMethod
+          );
+          if (!alreadyHasCall) {
+            lastMethod.calls.push({targetClass, targetMethod});
+          }
+
+          const alreadyHasConn = connections.some(
+            c =>
+              c.sourceId === currentClass.id &&
+              c.sourceMember === lastMethod.name &&
+              c.targetId === targetId &&
+              c.targetMember === (targetMethod || undefined)
+          );
+
+          if (!alreadyHasConn) {
+            connections.push({
+              id: `edge-${currentClass.id}-${lastMethod.name}->${targetClass}${targetMethod ? '.' + targetMethod : ''}`,
+              sourceId: currentClass.id,
+              sourceMember: lastMethod.name,
+              targetId,
+              targetMember: targetMethod || undefined,
+              type: 'invokes',
+            });
+          }
+        } else {
+          connections.push({
+            id: `edge-${currentClass.id}-calls->${targetClass}${targetMethod ? '.' + targetMethod : ''}`,
+            sourceId: currentClass.id,
+            targetId,
+            targetMember: targetMethod || undefined,
+            type: 'invokes',
+          });
+        }
         continue;
       }
     }
