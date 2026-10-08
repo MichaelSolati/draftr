@@ -118,21 +118,46 @@ export const archSpecStreamLanguage =
   StreamLanguage.define(archSpecStreamParser);
 
 /**
- * Token colors matching our design system
+ * Dark theme token colors matching our design system
  */
-export const archSpecHighlightStyle = HighlightStyle.define([
+export const archSpecDarkHighlightStyle = HighlightStyle.define([
   {tag: t.keyword, color: '#f59e0b', fontWeight: 'bold'}, // Amber
-  {tag: t.controlKeyword, color: '#a855f7', fontWeight: 'bold'}, // Purple
-  {tag: t.modifier, color: '#10b981', fontWeight: 'bold'}, // Emerald
-  {tag: t.typeName, color: '#c084fc', fontWeight: '600'}, // Light purple
+  {tag: t.controlKeyword, color: '#c084fc', fontWeight: 'bold'}, // Light purple
+  {tag: t.modifier, color: '#34d399', fontWeight: 'bold'}, // Emerald
+  {tag: t.typeName, color: '#a78bfa', fontWeight: '600'}, // Violet
   {tag: t.standard(t.typeName), color: '#38bdf8', fontWeight: '500'}, // Sky blue
   {tag: t.function(t.variableName), color: '#38bdf8', fontWeight: '600'}, // Sky blue
-  {tag: t.propertyName, color: '#f1f5f9', fontWeight: '600'}, // Foreground
-  {tag: t.lineComment, color: '#94a3b8', fontStyle: 'italic'}, // Slate
-  {tag: t.string, color: '#fb7185'}, // Rose
-  {tag: t.punctuation, color: '#64748b'},
-  {tag: t.variableName, color: '#e2e8f0'},
+  {tag: t.propertyName, color: '#f1f5f9', fontWeight: '600'}, // Slate 100
+  {tag: t.lineComment, color: '#94a3b8', fontStyle: 'italic'}, // Slate 400
+  {tag: t.string, color: '#fb7185'}, // Rose 400
+  {tag: t.punctuation, color: '#94a3b8'},
+  {tag: t.variableName, color: '#e2e8f0'}, // Slate 200
 ]);
+
+/**
+ * Light theme token colors with high contrast for white/light backgrounds
+ */
+export const archSpecLightHighlightStyle = HighlightStyle.define([
+  {tag: t.keyword, color: '#b45309', fontWeight: 'bold'}, // Amber 700
+  {tag: t.controlKeyword, color: '#7e22ce', fontWeight: 'bold'}, // Purple 700
+  {tag: t.modifier, color: '#047857', fontWeight: 'bold'}, // Emerald 700
+  {tag: t.typeName, color: '#6d28d9', fontWeight: '600'}, // Violet 700
+  {tag: t.standard(t.typeName), color: '#0284c7', fontWeight: '500'}, // Sky 700
+  {tag: t.function(t.variableName), color: '#0369a1', fontWeight: '600'}, // Sky 800
+  {tag: t.propertyName, color: '#0f172a', fontWeight: '600'}, // Slate 900 (dark text)
+  {tag: t.lineComment, color: '#64748b', fontStyle: 'italic'}, // Slate 500
+  {tag: t.string, color: '#be123c'}, // Rose 700
+  {tag: t.punctuation, color: '#64748b'},
+  {tag: t.variableName, color: '#334155'}, // Slate 700 (dark text)
+]);
+
+export const archSpecHighlightStyle = archSpecDarkHighlightStyle;
+
+export function getArchSpecHighlightStyle(mode: 'dark' | 'light' = 'dark') {
+  return mode === 'light'
+    ? archSpecLightHighlightStyle
+    : archSpecDarkHighlightStyle;
+}
 
 export function computeArchSpecIndent(prevLineText: string): number {
   const trimmed = prevLineText.trim();
@@ -300,61 +325,81 @@ export function createArchSpecCompletions(project?: ArchitectureProject) {
 }
 
 /**
- * Editor Theme
+ * Editor Theme generator supporting light and dark modes
  */
-export const archSpecEditorTheme = EditorView.theme({
-  '&': {
-    height: '100%',
-    fontSize: '12px',
-    fontFamily:
-      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-    backgroundColor: 'transparent',
-    color: 'hsl(var(--foreground))',
-  },
-  '.cm-content': {
-    caretColor: 'hsl(var(--foreground))',
-    lineHeight: '20px',
-    padding: '12px 8px',
-  },
-  '.cm-cursor': {
-    borderLeftColor: 'hsl(var(--foreground))',
-    borderLeftWidth: '2px',
-  },
-  '&.cm-focused .cm-selectionBackground, ::selection': {
-    backgroundColor: 'hsl(var(--primary) / 0.25) !important',
-  },
-  '.cm-gutters': {
-    backgroundColor: 'hsl(var(--muted) / 0.2)',
-    color: 'hsl(var(--muted-foreground) / 0.5)',
-    borderRight: '1px solid hsl(var(--border) / 0.5)',
-    fontFamily:
-      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-    fontSize: '11px',
-    paddingLeft: '4px',
-    paddingRight: '6px',
-  },
-  '.cm-activeLine': {
-    backgroundColor: 'hsl(var(--muted) / 0.15)',
-  },
-  '.cm-activeLineGutter': {
-    backgroundColor: 'hsl(var(--muted) / 0.3)',
-    color: 'hsl(var(--foreground))',
-    fontWeight: 'bold',
-  },
-  '.cm-tooltip-autocomplete': {
-    backgroundColor: 'hsl(var(--popover))',
-    border: '1px solid hsl(var(--border))',
-    borderRadius: '6px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
-    padding: '4px',
-    color: 'hsl(var(--popover-foreground))',
-  },
-  '.cm-tooltip-autocomplete ul li': {
-    borderRadius: '4px',
-    padding: '3px 8px',
-  },
-  '.cm-tooltip-autocomplete ul li[aria-selected]': {
-    backgroundColor: 'hsl(var(--primary))',
-    color: 'hsl(var(--primary-foreground))',
-  },
-});
+export function getArchSpecEditorTheme(mode: 'dark' | 'light' = 'dark') {
+  const isDark = mode === 'dark';
+  return EditorView.theme(
+    {
+      '&': {
+        height: '100%',
+        fontSize: '12px',
+        fontFamily:
+          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+        backgroundColor: 'transparent',
+        color: isDark ? '#f1f5f9' : '#0f172a',
+      },
+      '.cm-content': {
+        caretColor: isDark ? '#f8fafc' : '#0f172a',
+        lineHeight: '20px',
+        padding: '12px 8px',
+      },
+      '.cm-cursor': {
+        borderLeftColor: isDark ? '#f8fafc' : '#0f172a',
+        borderLeftWidth: '2px',
+      },
+      '&.cm-focused .cm-selectionBackground, ::selection': {
+        backgroundColor: isDark
+          ? 'rgba(168, 85, 247, 0.25) !important'
+          : 'rgba(59, 130, 246, 0.2) !important',
+      },
+      '.cm-gutters': {
+        backgroundColor: isDark
+          ? 'rgba(255, 255, 255, 0.03)'
+          : 'rgba(0, 0, 0, 0.03)',
+        color: isDark ? '#64748b' : '#94a3b8',
+        borderRight: isDark
+          ? '1px solid rgba(255, 255, 255, 0.08)'
+          : '1px solid rgba(0, 0, 0, 0.08)',
+        fontFamily:
+          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+        fontSize: '11px',
+        paddingLeft: '4px',
+        paddingRight: '6px',
+      },
+      '.cm-activeLine': {
+        backgroundColor: isDark
+          ? 'rgba(255, 255, 255, 0.05)'
+          : 'rgba(0, 0, 0, 0.04)',
+      },
+      '.cm-activeLineGutter': {
+        backgroundColor: isDark
+          ? 'rgba(255, 255, 255, 0.08)'
+          : 'rgba(0, 0, 0, 0.06)',
+        color: isDark ? '#f8fafc' : '#0f172a',
+        fontWeight: 'bold',
+      },
+      '.cm-tooltip-autocomplete': {
+        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+        border: isDark ? '1px solid #334155' : '1px solid #e2e8f0',
+        borderRadius: '6px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+        padding: '4px',
+        color: isDark ? '#f1f5f9' : '#0f172a',
+      },
+      '.cm-tooltip-autocomplete ul li': {
+        borderRadius: '4px',
+        padding: '3px 8px',
+      },
+      '.cm-tooltip-autocomplete ul li[aria-selected]': {
+        backgroundColor: isDark
+          ? 'rgba(168, 85, 247, 0.25)'
+          : 'rgba(59, 130, 246, 0.15)',
+        color: isDark ? '#ffffff' : '#0f172a',
+      },
+    },
+    {dark: isDark}
+  );
+}
+
+export const archSpecEditorTheme = getArchSpecEditorTheme('dark');

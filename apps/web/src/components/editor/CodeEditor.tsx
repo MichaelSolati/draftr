@@ -11,12 +11,13 @@ import {
   extractReferencedItems,
 } from '@arch-spec/core';
 import {ReferencedChips} from './ReferencedChips';
+import {useTheme} from '../theme/ThemeProvider';
 import {
   archSpecStreamLanguage,
-  archSpecHighlightStyle,
+  getArchSpecHighlightStyle,
   archSpecIndentService,
   archSpecShortcuts,
-  archSpecEditorTheme,
+  getArchSpecEditorTheme,
   createArchSpecCompletions,
 } from './archSpecCodeMirror';
 
@@ -31,6 +32,7 @@ export interface CodeEditorProps {
   showLineNumbers?: boolean;
   showReferencedChips?: boolean;
   autoFocus?: boolean;
+  theme?: 'dark' | 'light';
   onSave?: () => void;
   onCancel?: () => void;
   onSelectEntity?: (entityId: string) => void;
@@ -44,12 +46,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   showLineNumbers = true,
   showReferencedChips = true,
   autoFocus = false,
+  theme: themeProp,
   onSave,
   onCancel,
   onSelectEntity,
   placeholder = 'class MainService\n  public start(): void\n',
   className = '',
 }) => {
+  const {resolvedTheme} = useTheme();
+  const activeTheme = themeProp || resolvedTheme || 'dark';
+
   // Referenced items extracted from current text
   const referencedItems = useMemo(() => {
     return showReferencedChips ? extractReferencedItems(value, project) : [];
@@ -59,12 +65,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const extensions = useMemo(() => {
     const list = [
       archSpecStreamLanguage,
-      syntaxHighlighting(archSpecHighlightStyle),
+      syntaxHighlighting(getArchSpecHighlightStyle(activeTheme)),
       archSpecIndentService,
       indentUnit.of('  '),
       EditorState.tabSize.of(2),
       archSpecShortcuts,
-      archSpecEditorTheme,
+      getArchSpecEditorTheme(activeTheme),
       autocompletion({
         override: [createArchSpecCompletions(project)],
       }),
@@ -98,7 +104,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
 
     return list;
-  }, [project, showLineNumbers, onSave, onCancel]);
+  }, [project, showLineNumbers, onSave, onCancel, activeTheme]);
 
   const lineCount = useMemo(() => value.split('\n').length, [value]);
 
@@ -121,6 +127,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         <CodeMirror
           value={value}
           height="100%"
+          theme={activeTheme}
           className="h-full flex-1 overflow-auto font-mono text-xs"
           placeholder={placeholder}
           autoFocus={autoFocus}

@@ -9,6 +9,8 @@ import {
   archSpecStreamParser,
   handleArchSpecShortcut,
   archSpecShortcuts,
+  getArchSpecHighlightStyle,
+  getArchSpecEditorTheme,
 } from '../archSpecCodeMirror';
 import type {ArchitectureProject} from '@arch-spec/core';
 
@@ -195,6 +197,23 @@ describe('archSpecCodeMirror extensions', () => {
 
       const prop = tokenizeLine('title:');
       expect(prop[0].token).toBe('property');
+    });
+  });
+
+  describe('themes and highlight styles', () => {
+    it('provides distinct highlight styles for dark and light mode', () => {
+      const darkStyle = getArchSpecHighlightStyle('dark');
+      const lightStyle = getArchSpecHighlightStyle('light');
+      expect(darkStyle).toBeDefined();
+      expect(lightStyle).toBeDefined();
+      expect(darkStyle).not.toBe(lightStyle);
+    });
+
+    it('generates editor themes for dark and light mode', () => {
+      const darkTheme = getArchSpecEditorTheme('dark');
+      const lightTheme = getArchSpecEditorTheme('light');
+      expect(darkTheme).toBeDefined();
+      expect(lightTheme).toBeDefined();
     });
   });
 });
