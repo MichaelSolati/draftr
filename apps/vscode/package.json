@@ -4,6 +4,10 @@
   "description": "Language support, syntax highlighting, and architecture linting for draftr (.draftr) files",
   "version": "0.1.0",
   "publisher": "draftr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MichaelSolati/draftr.git"
+  },
   "type": "module",
   "engines": {
     "vscode": "^1.80.0"
@@ -37,8 +41,9 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "build": "tsc -p ./",
+    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=esm --platform=node",
+    "build": "tsc -p ./ && npm run compile",
+    "package": "vsce package --no-dependencies --skip-license",
     "watch": "tsc -watch -p ./"
   },
   "dependencies": {

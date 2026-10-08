@@ -9,3 +9,4 @@ graphify-out
 *.config.ts
 **/*.config.js
 **/*.config.ts
+scripts
