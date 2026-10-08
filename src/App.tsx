@@ -267,7 +267,7 @@ export const AppContent: React.FC = () => {
       const indent = line.search(/\S/);
 
       const declMatch = trimmed.match(
-        /^(class|type|interface)\s+([A-Za-z0-9_$]+)/
+        /^(class|type|interface|ui|db|api|event|state)\s+([A-Za-z0-9_$/]+)/
       );
       if (declMatch && declMatch[2] === entityName) {
         startIdx = i;
@@ -419,9 +419,11 @@ export const AppContent: React.FC = () => {
             <QuickTextEditor
               value={project.rawOutlineText}
               onChange={handleTextChange}
+              project={currentProjectWithPositions}
               diagnostics={combinedDiagnostics}
               onInsertSnippet={handleInsertSnippet}
               highlightedEntity={selectedEntityId}
+              onSelectEntity={setSelectedEntityId}
               isMinimized={isEditorMinimized}
               onToggleMinimize={() => setIsEditorMinimized(true)}
               entityCount={{

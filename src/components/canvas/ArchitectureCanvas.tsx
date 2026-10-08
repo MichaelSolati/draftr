@@ -32,6 +32,7 @@ import {ApiNode} from './nodes/ApiNode';
 import {EventNode} from './nodes/EventNode';
 import {StateNode} from './nodes/StateNode';
 import {type ArchitectureProject, type DomainType} from '../../types/spec';
+import {extractEntityRawSnippet} from '../../lib/editor/codeEditorUtils';
 
 const nodeTypes = {
   classNode: ClassNode,
@@ -100,12 +101,19 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
           x: 60 + (idx % 3) * 320,
           y: 60 + Math.floor(idx / 3) * 280,
         };
+        const rawSnippet =
+          extractEntityRawSnippet(project.rawOutlineText, cls.name) ||
+          undefined;
+
         list.push({
           id: cls.id,
           type: 'classNode',
           position: cls.position || defaultPos,
           data: {
             ...cls,
+            rawSnippet,
+            project,
+            onSelectEntity,
             onUpdateText: onUpdateEntityText,
           } as unknown as Record<string, unknown>,
           selected: selectedEntityId === cls.id,
@@ -206,8 +214,11 @@ const InnerCanvas: React.FC<ArchitectureCanvasProps> = ({
     project.apiRoutes,
     project.events,
     project.states,
+    project.rawOutlineText,
+    project,
     isDomainVisible,
     onUpdateEntityText,
+    onSelectEntity,
     selectedEntityId,
   ]);
 

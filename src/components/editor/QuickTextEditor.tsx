@@ -1,4 +1,4 @@
-import React, {useRef, useEffect} from 'react';
+import React from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -11,15 +11,21 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import {type ParserDiagnostic} from '../../types/spec';
+import {
+  type ArchitectureProject,
+  type ParserDiagnostic,
+} from '../../types/spec';
+import {CodeEditor} from './CodeEditor';
 
 interface QuickTextEditorProps {
   value: string;
   onChange: (val: string) => void;
+  project?: ArchitectureProject;
   diagnostics: ParserDiagnostic[];
   entityCount: {classes: number; ui: number; connections: number};
   onInsertSnippet?: (snippet: string) => void;
   highlightedEntity?: string | null;
+  onSelectEntity?: (entityId: string) => void;
   isMinimized?: boolean;
   onToggleMinimize?: () => void;
 }
@@ -27,16 +33,15 @@ interface QuickTextEditorProps {
 export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
   value,
   onChange,
+  project,
   diagnostics,
   entityCount,
   onInsertSnippet,
   highlightedEntity,
+  onSelectEntity,
   isMinimized = false,
   onToggleMinimize,
 }) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const lineNumbersRef = useRef<HTMLDivElement>(null);
-
   const lines = value.split('\n');
 
   // Compute lines related to highlighted entity
@@ -81,35 +86,6 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
     }
     return lineIndices;
   }, [value, highlightedEntity, lines]);
-
-  // Handle Tab key for indentation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-
-      const newValue = value.substring(0, start) + '  ' + value.substring(end);
-      onChange(newValue);
-
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }, 0);
-    }
-  };
-
-  const handleScroll = () => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  };
-
-  useEffect(() => {
-    handleScroll();
-  }, [value]);
 
   return (
     <div className="h-full flex flex-col bg-card border-r border-border overflow-hidden">
@@ -207,43 +183,17 @@ export const QuickTextEditor: React.FC<QuickTextEditorProps> = ({
         </div>
       )}
 
-      {/* Editor Surface */}
-      <div className="flex-1 relative flex overflow-hidden font-mono text-xs">
-        {/* Line Numbers Gutter */}
-        <div
-          ref={lineNumbersRef}
-          className="w-10 bg-muted/20 border-r border-border/50 text-muted-foreground/60 select-none py-3 text-right pr-2 overflow-hidden leading-5 font-mono"
-        >
-          {lines.map((_, i) => {
-            const lineNum = i + 1;
-            const hasDiag = diagnostics.some(d => d.line === lineNum);
-            const isHighlighted = highlightedLines.has(lineNum);
-            return (
-              <div
-                key={lineNum}
-                className={
-                  hasDiag
-                    ? 'text-amber-500 font-bold'
-                    : isHighlighted
-                      ? 'text-primary font-bold bg-primary/10'
-                      : ''
-                }
-              >
-                {lineNum}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Text Area */}
-        <textarea
-          ref={textareaRef}
+      {/* Unified Code Editor Surface */}
+      <div className="flex-1 relative flex flex-col overflow-hidden">
+        <CodeEditor
           value={value}
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onScroll={handleScroll}
-          spellCheck={false}
-          className="flex-1 resize-none bg-transparent text-foreground p-3 focus:outline-none leading-5 selection:bg-primary/20 overflow-y-auto whitespace-pre font-mono"
+          onChange={onChange}
+          project={project}
+          diagnostics={diagnostics}
+          highlightedLines={highlightedLines}
+          showLineNumbers={true}
+          showReferencedChips={true}
+          onSelectEntity={onSelectEntity}
           placeholder="class AuthService&#10;  + login(creds: Credentials): Session&#10;&#10;ui App&#10;  ui Header&#10;    binds AuthService"
         />
       </div>

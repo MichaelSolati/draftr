@@ -1,7 +1,14 @@
 import React, {memo, useState} from 'react';
 import {Handle, Position, type NodeProps} from '@xyflow/react';
 import {Box, Lock, Unlock, Shield, Edit3, Check, X} from 'lucide-react';
-import {type ClassSpec, type Visibility} from '../../../types/spec';
+import {
+  type ClassSpec,
+  type Visibility,
+  type ArchitectureProject,
+} from '../../../types/spec';
+import {CodeEditor} from '../../editor/CodeEditor';
+import {ReferencedChips} from '../../editor/ReferencedChips';
+import {extractReferencedItems} from '../../../lib/editor/codeEditorUtils';
 
 function renderVisibilityIcon(visibility: Visibility) {
   switch (visibility) {
@@ -17,6 +24,8 @@ function renderVisibilityIcon(visibility: Visibility) {
 
 interface ClassNodeData extends ClassSpec {
   rawSnippet?: string;
+  project?: ArchitectureProject;
+  onSelectEntity?: (entityId: string) => void;
   onUpdateText?: (className: string, newSnippet: string) => void;
 }
 
@@ -63,20 +72,25 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
     setIsEditing(true);
   };
 
-  const handleSaveEdit = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const handleSaveEdit = () => {
     if (spec.onUpdateText) {
       spec.onUpdateText(spec.name, editText.trim());
     }
     setIsEditing(false);
   };
 
-  const handleCancelEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCancelEdit = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setIsEditing(false);
   };
 
   const query = filterQuery.toLowerCase().trim();
+
+  // Referenced items extracted for this class
+  const referencedItems = React.useMemo(() => {
+    const snippetToParse = spec.rawSnippet || getInitialSnippet();
+    return extractReferencedItems(snippetToParse, spec.project);
+  }, [spec.rawSnippet, spec.project]);
 
   const filteredProperties = React.useMemo(() => {
     if (!spec.properties) return [];
@@ -105,7 +119,7 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
   return (
     <div
       onDoubleClick={!isEditing ? handleStartEdit : undefined}
-      className="min-w-[260px] max-w-[360px] rounded-lg border border-border bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-hidden"
+      className="min-w-[280px] max-w-[380px] rounded-lg border border-border bg-card text-card-foreground shadow-md transition-shadow hover:shadow-lg font-sans text-xs overflow-hidden"
     >
       {/* Node Header */}
       <div className="flex items-center justify-between border-b border-border bg-muted/60 px-3 py-2">
@@ -128,7 +142,7 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
               <button
                 type="button"
                 onClick={handleSaveEdit}
-                title="Save changes"
+                title="Save changes (Ctrl+Enter)"
                 className="p-1 rounded bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors nodrag"
               >
                 <Check className="h-3 w-3" />
@@ -136,7 +150,7 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                title="Cancel editing"
+                title="Cancel editing (Esc)"
                 className="p-1 rounded bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-colors nodrag"
               >
                 <X className="h-3 w-3" />
@@ -149,25 +163,34 @@ export const ClassNode: React.FC<NodeProps> = memo(({data}) => {
         </div>
       </div>
 
-      {/* Inline Text Box Editor Mode */}
-      {isEditing ? (
-        <div className="p-2.5 bg-background font-mono text-[11px] space-y-2 nodrag">
-          <textarea
-            value={editText}
-            onChange={e => setEditText(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Escape') {
-                setIsEditing(false);
-              } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                handleSaveEdit();
-              }
-            }}
-            rows={Math.max(5, editText.split('\n').length + 1)}
-            autoFocus
-            className="w-full resize-y rounded border border-primary/50 bg-muted/20 p-2 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary leading-4 selection:bg-primary/30"
-            placeholder="class Name&#10;  + method(): void"
+      {/* Referenced Chips in Header if not editing */}
+      {!isEditing && referencedItems.length > 0 && (
+        <div className="px-2.5 py-1 border-b border-border/40 bg-muted/20">
+          <ReferencedChips
+            items={referencedItems}
+            onSelectEntity={spec.onSelectEntity}
           />
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        </div>
+      )}
+
+      {/* Inline Shared CodeEditor Mode */}
+      {isEditing ? (
+        <div className="p-2 bg-background font-mono text-[11px] space-y-1.5 nodrag">
+          <div className="border border-primary/40 rounded overflow-hidden max-h-64">
+            <CodeEditor
+              value={editText}
+              onChange={setEditText}
+              project={spec.project}
+              showLineNumbers={false}
+              showReferencedChips={false}
+              autoFocus={true}
+              minRows={5}
+              onSave={handleSaveEdit}
+              onCancel={handleCancelEdit}
+              placeholder="class Name&#10;  + method(): void"
+            />
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
             <span>Ctrl+Enter to save, Esc to cancel</span>
             <div className="flex items-center gap-1">
               <button
