@@ -260,8 +260,8 @@ describe('draftrCodeMirror extensions', () => {
       const prim = tokenizeLine('string number boolean');
       expect(prim.filter(t => t.token === 'primitive').length).toBe(3);
 
-      const action = tokenizeLine('calls binds');
-      expect(action.filter(t => t.token === 'action').length).toBe(2);
+      const action = tokenizeLine('calls binds bind invokes');
+      expect(action.filter(t => t.token === 'action').length).toBe(4);
 
       const type = tokenizeLine('UserService');
       expect(type[0].token).toBe('type');

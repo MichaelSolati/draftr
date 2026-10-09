@@ -433,4 +433,26 @@ class StripeGateway extends BaseService implements PaymentGateway, Auditable
       true
     );
   });
+
+  it('emits clear incomplete invocation diagnostics for standalone calls before binding', () => {
+    const text = `
+class Pi
+  public pi: string
+
+class Po
+  public po: string
+  private pi(): Pi.pi
+    calls
+`;
+    const result = parseOutline(text);
+    expect(result.classes).toHaveLength(2);
+    expect(result.diagnostics).toEqual([
+      {
+        line: 8,
+        message:
+          'Incomplete invocation statement: expected target entity or method after "calls"',
+        severity: 'info',
+      },
+    ]);
+  });
 });

@@ -79,12 +79,42 @@
     "actions": {
       "patterns": [
         {
+          "match": "\\b(binds?|calls|invokes)\\b\\s+([A-Za-z0-9_$]+)\\s*\\(",
+          "captures": {
+            "1": { "name": "keyword.control.action.draftr" },
+            "2": { "name": "entity.name.function.draftr" }
+          }
+        },
+        {
+          "match": "(->)\\s*([A-Za-z0-9_$]+)\\s*\\(",
+          "captures": {
+            "1": { "name": "keyword.control.arrow.draftr" },
+            "2": { "name": "entity.name.function.draftr" }
+          }
+        },
+        {
+          "match": "\\b(binds?|calls|invokes)\\b\\s+([A-Za-z0-9_$]+)(?:\\.([A-Za-z0-9_$]+))?",
+          "captures": {
+            "1": { "name": "keyword.control.action.draftr" },
+            "2": { "name": "entity.name.type.class.draftr" },
+            "3": { "name": "entity.name.function.draftr" }
+          }
+        },
+        {
+          "match": "(->)\\s*([A-Za-z0-9_$]+)(?:\\.([A-Za-z0-9_$]+))?",
+          "captures": {
+            "1": { "name": "keyword.control.arrow.draftr" },
+            "2": { "name": "entity.name.type.class.draftr" },
+            "3": { "name": "entity.name.function.draftr" }
+          }
+        },
+        {
           "match": "\\b(binds?|calls|invokes)\\b",
-          "name": "keyword.operator.action.draftr"
+          "name": "keyword.control.action.draftr"
         },
         {
           "match": "->",
-          "name": "keyword.operator.arrow.draftr"
+          "name": "keyword.control.arrow.draftr"
         }
       ]
     },

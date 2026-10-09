@@ -69,7 +69,7 @@ export const draftrStreamParser = {
       }
 
       // Actions / Invocations
-      if (/^(binds|calls|invokes)$/i.test(str)) {
+      if (/^(binds?|calls|invokes)$/i.test(str)) {
         return 'action';
       }
 

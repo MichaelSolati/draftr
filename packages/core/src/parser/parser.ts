@@ -676,12 +676,20 @@ export function parseOutline(text: string): ParseResult {
 
       // Direct class dependency / call: calls Target, -> Target, or binds Target
       const callMatch = trimmed.match(
-        /^(calls|invokes|->|binds?)\s+([A-Za-z0-9_$.]+)/i
+        /^(calls|invokes|->|binds?)(?:\s+([A-Za-z0-9_$.]+))?/i
       );
       if (callMatch) {
         const keyword = callMatch[1].toLowerCase();
         const isBinds = keyword === 'binds' || keyword === 'bind';
-        const targetStr = callMatch[2].trim();
+        const targetStr = (callMatch[2] || '').trim();
+        if (!targetStr) {
+          diagnostics.push({
+            line: lineNum,
+            message: `Incomplete invocation statement: expected target entity after "${callMatch[1]}"`,
+            severity: 'info',
+          });
+          continue;
+        }
         const dotIdx = targetStr.indexOf('.');
         let targetClass =
           dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
@@ -844,6 +852,15 @@ export function parseOutline(text: string): ParseResult {
               type: 'invokes',
             });
           }
+          continue;
+        }
+
+        if (/^(calls|invokes|->)$/i.test(trimmed)) {
+          diagnostics.push({
+            line: lineNum,
+            message: `Incomplete invocation statement: expected target entity or method after "${trimmed}"`,
+            severity: 'info',
+          });
           continue;
         }
       }

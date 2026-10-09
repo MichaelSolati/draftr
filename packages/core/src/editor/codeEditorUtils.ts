@@ -393,9 +393,12 @@ export function getActiveTokenInfo(
   const match = line.match(/([-+#A-Za-z0-9_$.]+)$/);
   const prefix = match ? match[1] : '';
 
-  const isAfterArrowOrCall = /(->|calls|-)[ \t]*[A-Za-z0-9_$.]*$/.test(line);
+  const isAfterArrowOrCall =
+    /(?:->[ \t]*|(?:\b(?:calls|invokes|binds?)\b|-)[ \t]+)[A-Za-z0-9_$.]*$/.test(
+      line
+    );
   const isAfterColon = /:[ \t]*[A-Za-z0-9_$.]*$/.test(line);
-  const isSubBullet = /^[ \t]*(-|->|calls)[ \t]+/.test(line);
+  const isSubBullet = /^[ \t]*(-|->|calls|invokes|binds?)[ \t]+/.test(line);
   const isLineStart = /^[ \t]*[-+#A-Za-z0-9_$.]*$/.test(line);
 
   return {

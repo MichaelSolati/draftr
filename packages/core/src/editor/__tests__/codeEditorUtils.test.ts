@@ -174,5 +174,25 @@ describe('codeEditorUtils', () => {
       const suggestions = getAutocompleteSuggestions(tokenInfo, mockProject);
       expect(suggestions.some(s => s.label === 'string')).toBe(true);
     });
+
+    it('distinguishes typing the calls keyword from typing invocation targets after calls', () => {
+      // 1. Typing "calls" standalone without space should suggest the keyword
+      const keywordToken = getActiveTokenInfo('    call', 8);
+      expect(keywordToken.isAfterArrowOrCall).toBe(false);
+      const keywordSuggestions = getAutocompleteSuggestions(
+        keywordToken,
+        mockProject
+      );
+      expect(keywordSuggestions.some(s => s.label === 'calls')).toBe(true);
+
+      // 2. Once space is typed after "calls", suggest invocation target entities
+      const targetToken = getActiveTokenInfo('    calls ', 10);
+      expect(targetToken.isAfterArrowOrCall).toBe(true);
+      const targetSuggestions = getAutocompleteSuggestions(
+        targetToken,
+        mockProject
+      );
+      expect(targetSuggestions.some(s => s.label === 'AuthService')).toBe(true);
+    });
   });
 });
