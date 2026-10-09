@@ -1,103 +1,30 @@
-import {lintArchitecture, parseOutline} from '@draftr/core';
 import * as vscode from 'vscode';
 
+import {registerImportCommands} from './commands/importCommands';
+import {registerScaffoldCommand} from './commands/scaffoldCommand';
+import {registerCodeActions} from './providers/codeActions';
+import {registerCompletions} from './providers/completions';
+import {registerDefinitions} from './providers/definitions';
+import {registerDiagnostics} from './providers/diagnostics';
+import {registerHover} from './providers/hover';
+import {registerSymbols} from './providers/symbols';
+import {registerPreviewPanel} from './webview/previewPanel';
+
 export function activate(context: vscode.ExtensionContext) {
-  const diagnosticCollection =
-    vscode.languages.createDiagnosticCollection('draftr');
-  context.subscriptions.push(diagnosticCollection);
+  // 1. Register Language Features
+  registerDiagnostics(context);
+  registerCompletions(context);
+  registerSymbols(context);
+  registerDefinitions(context);
+  registerHover(context);
+  registerCodeActions(context);
 
-  const validateDocument = (document: vscode.TextDocument) => {
-    if (document.languageId !== 'draftr' && document.languageId !== 'archspec')
-      return;
+  // 2. Register Workspace Commands
+  registerScaffoldCommand(context);
+  registerImportCommands(context);
 
-    const text = document.getText();
-    const parseResult = parseOutline(text);
-    const issues = lintArchitecture({
-      id: 'active-spec',
-      name: document.fileName,
-      rawOutlineText: text,
-      classes: parseResult.classes,
-      uiComponents: parseResult.uiComponents,
-      tables: parseResult.tables,
-      apiRoutes: parseResult.apiRoutes,
-      events: parseResult.events,
-      states: parseResult.states,
-      connections: parseResult.connections,
-      updatedAt: Date.now(),
-      createdAt: Date.now(),
-    });
-
-    const diagnostics: vscode.Diagnostic[] = [];
-
-    // 1. Parser syntax diagnostics
-    for (const diag of parseResult.diagnostics) {
-      const lineIdx = Math.max(0, diag.line - 1);
-      const line = document.lineAt(lineIdx);
-      const range = line.range;
-      const severity =
-        diag.severity === 'error'
-          ? vscode.DiagnosticSeverity.Error
-          : diag.severity === 'warning'
-            ? vscode.DiagnosticSeverity.Warning
-            : vscode.DiagnosticSeverity.Information;
-
-      diagnostics.push(new vscode.Diagnostic(range, diag.message, severity));
-    }
-
-    // 2. Architectural linter issues
-    for (const issue of issues) {
-      const targetEntity = issue.affectedEntityId
-        ? issue.affectedEntityId.replace(
-            /^(entity-|ui-|table-|api-|event-|state-)/,
-            ''
-          )
-        : '';
-
-      let lineIdx = 0;
-      if (targetEntity) {
-        for (let i = 0; i < document.lineCount; i++) {
-          const lineText = document.lineAt(i).text;
-          if (lineText.includes(targetEntity)) {
-            lineIdx = i;
-            break;
-          }
-        }
-      }
-
-      const range = document.lineAt(lineIdx).range;
-      const severity =
-        issue.severity === 'error'
-          ? vscode.DiagnosticSeverity.Error
-          : issue.severity === 'warning'
-            ? vscode.DiagnosticSeverity.Warning
-            : vscode.DiagnosticSeverity.Information;
-
-      diagnostics.push(
-        new vscode.Diagnostic(
-          range,
-          `[draftr] ${issue.title}: ${issue.description}`,
-          severity
-        )
-      );
-    }
-
-    diagnosticCollection.set(document.uri, diagnostics);
-  };
-
-  // Validate on open, change, and save
-  context.subscriptions.push(
-    vscode.workspace.onDidOpenTextDocument(validateDocument),
-    vscode.workspace.onDidChangeTextDocument(event =>
-      validateDocument(event.document)
-    ),
-    vscode.workspace.onDidCloseTextDocument(doc =>
-      diagnosticCollection.delete(doc.uri)
-    )
-  );
-
-  if (vscode.window.activeTextEditor) {
-    validateDocument(vscode.window.activeTextEditor.document);
-  }
+  // 3. Register Live Diagram Preview Webview
+  registerPreviewPanel(context);
 }
 
 export function deactivate() {}

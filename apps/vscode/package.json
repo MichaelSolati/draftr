@@ -44,21 +44,84 @@
         "scopeName": "source.draftr",
         "path": "./syntaxes/draftr.tmLanguage.json"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "draftr.openPreview",
+        "title": "Open Architecture Diagram Preview",
+        "category": "Draftr",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "draftr.scaffold",
+        "title": "Scaffold TypeScript Project",
+        "category": "Draftr"
+      },
+      {
+        "command": "draftr.importSql",
+        "title": "Import from SQL Schema",
+        "category": "Draftr"
+      },
+      {
+        "command": "draftr.importTypeScript",
+        "title": "Import from TypeScript Code",
+        "category": "Draftr"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "draftr.openPreview",
+          "when": "resourceLangId == draftr || resourceLangId == archspec",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "draftr.openPreview",
+          "when": "resourceLangId == draftr || resourceLangId == archspec"
+        },
+        {
+          "command": "draftr.scaffold",
+          "when": "resourceLangId == draftr || resourceLangId == archspec"
+        },
+        {
+          "command": "draftr.importSql"
+        },
+        {
+          "command": "draftr.importTypeScript"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=esm --platform=node",
+    "compile:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=esm --platform=node",
+    "compile:webview": "esbuild src/webview/client/main.tsx --bundle --outfile=dist/webview.js --format=iife --platform=browser --loader:.css=css",
+    "compile": "run-p compile:*",
     "build": "tsc -p ./ && npm run compile",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "package": "vsce package --no-dependencies --skip-license",
     "watch": "tsc -watch -p ./"
   },
   "dependencies": {
-    "@draftr/core": "*"
+    "@dagrejs/dagre": "^3.1.1",
+    "@draftr/core": "*",
+    "@xyflow/react": "^12.12.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.52.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@types/dagre": "^0.7.52",
     "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "@types/vscode": "^1.80.0",
-    "typescript": "^5.6.3"
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.6.3",
+    "vitest": "^5.0.3"
   }
 }

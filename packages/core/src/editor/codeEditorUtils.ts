@@ -651,6 +651,18 @@ export function getAutocompleteSuggestions(
 }
 
 /**
+ * Convenience helper to compute completions directly from current line and cursor offset.
+ */
+export function suggestCompletions(
+  currentLine: string,
+  cursorOffset: number,
+  project?: ArchitectureProject
+): AutocompleteItem[] {
+  const tokenInfo = getActiveTokenInfo(currentLine, cursorOffset);
+  return getAutocompleteSuggestions(tokenInfo, project);
+}
+
+/**
  * Extract referenced entities and methods in a snippet for chip rendering.
  */
 export function extractReferencedItems(

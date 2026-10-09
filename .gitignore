@@ -15,6 +15,7 @@ build
 *.local
 coverage
 graphify-out
+*.vsix
 
 # Editor directories and files
 .vscode/*
