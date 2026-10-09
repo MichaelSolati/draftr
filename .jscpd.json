@@ -8,6 +8,8 @@
     "graphify-out/**",
     "**/node_modules/**",
     "**/dist/**",
+    "**/.docusaurus/**",
+    "**/build/**",
     "**/package-lock.json",
     "**/.git/**"
   ],

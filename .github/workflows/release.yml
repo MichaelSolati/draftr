@@ -55,7 +55,12 @@ jobs:
         run: |
           npm run package --workspace=draftr-vscode
 
-      - name: Deploy Web App to GitHub Pages
+      - name: Package Docs for GitHub Pages
+        run: |
+          mkdir -p apps/web/dist/docs
+          cp -r apps/docs/build/* apps/web/dist/docs/
+
+      - name: Deploy Web App and Docs to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -9,6 +9,7 @@ module.exports = {
       './packages/core/tsconfig.json',
       './apps/web/tsconfig.json',
       './apps/vscode/tsconfig.json',
+      './apps/docs/tsconfig.json',
     ],
   },
   plugins: ['react', 'react-hooks', 'simple-import-sort'],
