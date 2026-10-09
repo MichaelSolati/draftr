@@ -4,7 +4,7 @@ Visual and textual architecture specification modeling inside VS Code.
 
 ## Features
 
-- **Syntax Highlighting**: Highlighting for `.draftr` architecture specification files (`.draftr`, `.archspec`, `.arch`).
+- **Syntax Highlighting**: Highlighting for `.draftr` architecture specification files.
 - **Live Diagnostics & Linter**: Real-time validation of architectural hierarchy, layer boundaries, circular dependencies, and entity contracts.
 - **Snippets & Shortcuts**: Automatic indentation and expansion for classes, tables, APIs, and relationships.
 

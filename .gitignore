@@ -16,6 +16,7 @@ build
 coverage
 graphify-out
 *.vsix
+*.draftr
 
 # Editor directories and files
 .vscode/*

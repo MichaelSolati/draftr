@@ -488,18 +488,3 @@ export function getDraftrEditorTheme(mode: 'dark' | 'light' = 'dark') {
 }
 
 export const draftrEditorTheme = getDraftrEditorTheme('dark');
-
-// Backward compatibility aliases
-export const archSpecStreamParser = draftrStreamParser;
-export const archSpecStreamLanguage = draftrStreamLanguage;
-export const archSpecDarkHighlightStyle = draftrDarkHighlightStyle;
-export const archSpecLightHighlightStyle = draftrLightHighlightStyle;
-export const archSpecHighlightStyle = draftrHighlightStyle;
-export const getArchSpecHighlightStyle = getDraftrHighlightStyle;
-export const computeArchSpecIndent = computeDraftrIndent;
-export const archSpecIndentService = draftrIndentService;
-export const handleArchSpecShortcut = handleDraftrShortcut;
-export const archSpecShortcuts = draftrShortcuts;
-export const createArchSpecCompletions = createDraftrCompletions;
-export const getArchSpecEditorTheme = getDraftrEditorTheme;
-export const archSpecEditorTheme = draftrEditorTheme;

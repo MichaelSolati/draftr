@@ -390,7 +390,7 @@ export function getActiveTokenInfo(
   const line = value.slice(lineStart, cursor);
   const col = cursor - lineStart;
 
-  const match = line.match(/([A-Za-z0-9_$.]+)$/);
+  const match = line.match(/([-+#A-Za-z0-9_$.]+)$/);
   const prefix = match ? match[1] : '';
 
   const isAfterArrowOrCall = /(->|calls|-)[ \t]*[A-Za-z0-9_$.]*$/.test(line);
@@ -597,7 +597,7 @@ export function getAutocompleteSuggestions(
   }
 
   // 3. General Token Context
-  if (query.length > 0) {
+  if (query.length > 0 && !['+', '-', '#'].includes(query)) {
     // Top-level keywords
     DSL_KEYWORDS.forEach(kw => {
       if (kw.label.toLowerCase().startsWith(query)) {

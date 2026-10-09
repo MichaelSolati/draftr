@@ -29,6 +29,7 @@ vi.mock('vscode', () => {
     public kind?: number;
     public insertText?: string;
     public detail?: string;
+    public range?: Range;
     constructor(public label: string) {}
   }
 
@@ -284,6 +285,25 @@ class OrderService
       expect(
         items.some(i => i.label.toString().includes('PaymentService'))
       ).toBe(true);
+    });
+
+    it('provides replacement range for modifier shortcuts like +', () => {
+      const provider = new DraftrCompletionItemProvider();
+      const doc = createMockDocument('class OrderService\n  +');
+      const items = provider.provideCompletionItems(
+        doc,
+        new vscode.Position(1, 3)
+      ) as vscode.CompletionItem[];
+
+      const publicItem = items.find(i =>
+        i.label.toString().includes('+ (public)')
+      );
+      expect(publicItem).toBeDefined();
+      expect(publicItem?.insertText).toBe('public ');
+      const range = publicItem?.range as vscode.Range;
+      expect(range).toBeDefined();
+      expect(range.start.character).toBe(2);
+      expect(range.end.character).toBe(3);
     });
   });
 

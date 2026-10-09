@@ -18,8 +18,7 @@
     "Snippets"
   ],
   "activationEvents": [
-    "onLanguage:draftr",
-    "onLanguage:archspec"
+    "onLanguage:draftr"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -27,13 +26,10 @@
       {
         "id": "draftr",
         "aliases": [
-          "draftr",
-          "archspec"
+          "draftr"
         ],
         "extensions": [
-          ".draftr",
-          ".archspec",
-          ".arch"
+          ".draftr"
         ],
         "configuration": "./language-configuration.json"
       }
@@ -72,18 +68,18 @@
       "editor/title": [
         {
           "command": "draftr.openPreview",
-          "when": "resourceLangId == draftr || resourceLangId == archspec",
+          "when": "resourceLangId == draftr",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
           "command": "draftr.openPreview",
-          "when": "resourceLangId == draftr || resourceLangId == archspec"
+          "when": "resourceLangId == draftr"
         },
         {
           "command": "draftr.scaffold",
-          "when": "resourceLangId == draftr || resourceLangId == archspec"
+          "when": "resourceLangId == draftr"
         },
         {
           "command": "draftr.importSql"

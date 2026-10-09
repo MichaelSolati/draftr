@@ -89,10 +89,7 @@ export function registerHover(
   context: vscode.ExtensionContext
 ): vscode.Disposable {
   const provider = new DraftrHoverProvider();
-  const disposable = vscode.languages.registerHoverProvider(
-    ['draftr', 'archspec'],
-    provider
-  );
+  const disposable = vscode.languages.registerHoverProvider('draftr', provider);
   context.subscriptions.push(disposable);
   return disposable;
 }

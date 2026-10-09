@@ -44,7 +44,7 @@ export function registerCodeActions(
 ): vscode.Disposable {
   const provider = new DraftrCodeActionProvider();
   const disposable = vscode.languages.registerCodeActionsProvider(
-    ['draftr', 'archspec'],
+    'draftr',
     provider,
     {
       providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],

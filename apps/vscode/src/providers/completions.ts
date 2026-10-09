@@ -13,6 +13,15 @@ export class DraftrCompletionItemProvider
     const line = document.lineAt(position.line).text;
     const cursorOffset = position.character;
 
+    // Find the prefix/token being completed before the cursor to define the replacement range
+    const linePrefix = line.slice(0, cursorOffset);
+    const match = linePrefix.match(/([-+#A-Za-z0-9_$.]+)$/);
+    const prefixLength = match ? match[1].length : 0;
+    const range = new vscode.Range(
+      new vscode.Position(position.line, cursorOffset - prefixLength),
+      position
+    );
+
     // Parse the full document to pass existing project entities into suggestCompletions
     const project = createProjectFromText(
       document.getText(),
@@ -22,6 +31,7 @@ export class DraftrCompletionItemProvider
 
     return rawSuggestions.map((s: AutocompleteItem) => {
       const item = new vscode.CompletionItem(s.label);
+      item.range = range;
 
       switch (s.kind) {
         case 'class':
@@ -57,7 +67,7 @@ export function registerCompletions(
 ): vscode.Disposable {
   const provider = new DraftrCompletionItemProvider();
   const disposable = vscode.languages.registerCompletionItemProvider(
-    ['draftr', 'archspec'],
+    'draftr',
     provider,
     '.',
     ':',

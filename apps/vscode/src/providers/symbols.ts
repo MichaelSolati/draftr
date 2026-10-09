@@ -190,7 +190,7 @@ export function registerSymbols(
 ): vscode.Disposable {
   const provider = new DraftrDocumentSymbolProvider();
   const disposable = vscode.languages.registerDocumentSymbolProvider(
-    ['draftr', 'archspec'],
+    'draftr',
     provider
   );
   context.subscriptions.push(disposable);

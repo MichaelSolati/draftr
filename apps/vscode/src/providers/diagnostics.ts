@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 export function computeDiagnostics(
   document: vscode.TextDocument
 ): vscode.Diagnostic[] {
-  if (document.languageId !== 'draftr' && document.languageId !== 'archspec') {
+  if (document.languageId !== 'draftr') {
     return [];
   }
 

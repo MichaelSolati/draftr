@@ -76,7 +76,7 @@ export function registerDefinitions(
 ): vscode.Disposable {
   const provider = new DraftrDefinitionProvider();
   const disposable = vscode.languages.registerDefinitionProvider(
-    ['draftr', 'archspec'],
+    'draftr',
     provider
   );
   context.subscriptions.push(disposable);

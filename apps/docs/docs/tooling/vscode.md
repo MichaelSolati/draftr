@@ -6,7 +6,7 @@ sidebar_position: 2
 
 # Draftr VS Code Extension
 
-The **Draftr VS Code Extension** (`draftr-vscode`) provides first-class language tooling, architectural validation, code scaffolding, and interactive diagram visualization for Draftr architecture specification files (`.draftr`, `.archspec`, `.arch`).
+The **Draftr VS Code Extension** (`draftr-vscode`) provides first-class language tooling, architectural validation, code scaffolding, and interactive diagram visualization for Draftr architecture specification files (`.draftr`).
 
 ## Features
 
