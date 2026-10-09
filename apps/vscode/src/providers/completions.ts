@@ -31,7 +31,18 @@ export class DraftrCompletionItemProvider
 
     return rawSuggestions.map((s: AutocompleteItem) => {
       const item = new vscode.CompletionItem(s.label);
-      item.range = range;
+      item.range = {
+        inserting: range,
+        replacing: range,
+      };
+
+      if (s.label.startsWith('+')) {
+        item.filterText = '+';
+      } else if (s.label.startsWith('-')) {
+        item.filterText = '-';
+      } else if (s.label.startsWith('#')) {
+        item.filterText = '#';
+      }
 
       switch (s.kind) {
         case 'class':

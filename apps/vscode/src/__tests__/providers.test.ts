@@ -29,7 +29,8 @@ vi.mock('vscode', () => {
     public kind?: number;
     public insertText?: string;
     public detail?: string;
-    public range?: Range;
+    public filterText?: string;
+    public range?: Range | {inserting: Range; replacing: Range};
     constructor(public label: string) {}
   }
 
@@ -300,10 +301,16 @@ class OrderService
       );
       expect(publicItem).toBeDefined();
       expect(publicItem?.insertText).toBe('public ');
-      const range = publicItem?.range as vscode.Range;
+      const range = publicItem?.range as {
+        inserting: vscode.Range;
+        replacing: vscode.Range;
+      };
       expect(range).toBeDefined();
-      expect(range.start.character).toBe(2);
-      expect(range.end.character).toBe(3);
+      expect(range.inserting.start.character).toBe(2);
+      expect(range.inserting.end.character).toBe(3);
+      expect(range.replacing.start.character).toBe(2);
+      expect(range.replacing.end.character).toBe(3);
+      expect(publicItem?.filterText).toBe('+');
     });
   });
 

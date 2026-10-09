@@ -2,7 +2,7 @@
   "name": "draftr-vscode",
   "displayName": "draftr",
   "description": "Language support, syntax highlighting, and architecture linting for draftr (.draftr) files",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "draftr",
   "repository": {
     "type": "git",
