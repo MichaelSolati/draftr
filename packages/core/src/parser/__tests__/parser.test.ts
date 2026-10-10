@@ -88,13 +88,13 @@ class Logger
   it('parses database tables and foreign keys', () => {
     const text = `
 db Users
-  + id: uuid pk
-  + email: string unique
-  + teamId: uuid fk -> Teams.id
+  pk id: uuid
+  unique email: string
+  fk teamId: Teams.id
 
 db Teams
-  + id: uuid pk
-  + name: string
+  pk id: uuid
+  name: string
 `;
     const result = parseOutline(text);
     expect(result.tables).toHaveLength(2);
@@ -294,7 +294,7 @@ class PaymentService
   + charge(): boolean
 
 db InventoryTable
-  + id: uuid pk
+  pk id: uuid
 
 class NotificationService
   + send(): void
@@ -481,10 +481,10 @@ ui UserProfileView
   binds UserService
 
 db UsersTable
-  id: uuid pk
-  email: string unique
-  nickname?: string nullable index
-  created_at: timestamp default
+  pk id: uuid
+  unique email: string
+  nullable index nickname?: string
+  default created_at: timestamp
 
 state UserStore
   currentUser: User

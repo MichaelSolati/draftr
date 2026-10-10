@@ -118,8 +118,8 @@ export const SyntaxDocPanel: React.FC<SyntaxDocPanelProps> = ({
     },
     {
       title: 'Database Tables & Constraints',
-      desc: 'Declare tables with "db <Name>" and columns with modifiers: "pk", "fk", "unique", "nullable", "index", and "default".',
-      code: 'db Users\n  id: uuid pk\n  email: string unique\n  nickname?: string nullable\n\ndb Orders\n  id: uuid pk\n  user_id: uuid fk -> Users.id\n  status: string default',
+      desc: 'Declare tables with "db <Name>" and columns with prefix modifiers: "pk", "fk", "unique", "nullable", "index", and "default". Foreign keys directly reference the target type.',
+      code: 'db Users\n  pk id: uuid\n  unique email: string\n  nullable nickname?: string\n\ndb Orders\n  pk id: uuid\n  fk user_id: Users.id\n  default status: string',
     },
     {
       title: 'REST API Routes',

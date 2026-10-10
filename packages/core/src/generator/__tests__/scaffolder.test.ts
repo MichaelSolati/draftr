@@ -92,9 +92,9 @@ api /users
   + POST / -> UserService.createUser
 
 db Users
-  + id: int pk
-  + active: boolean
-  + created_at: timestamp
+  pk id: int
+  active: boolean
+  created_at: timestamp
 `;
     const parsed = parseOutline(text);
     const project = {

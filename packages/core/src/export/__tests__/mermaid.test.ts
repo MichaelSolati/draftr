@@ -76,11 +76,11 @@ class Dog extends Animal implements Pet
   it('exports valid ER diagram syntax for database tables', () => {
     const text = `
 db Users
-  + id: uuid pk
-  + teamId: uuid fk -> Teams.id
+  pk id: uuid
+  fk teamId: Teams.id
 
 db Teams
-  + id: uuid pk
+  pk id: uuid
 `;
     const parsed = parseOutline(text);
     const project = {

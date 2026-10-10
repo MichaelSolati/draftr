@@ -58,8 +58,8 @@ class ServiceB
   + doOther(): void -> ServiceA.doWork
 
 db Orders
-  + id: uuid pk
-  + user_id: uuid -> MissingUsers.id
+  pk id: uuid
+  fk user_id: MissingUsers.id
 
 ui OrderView
   binds Orders

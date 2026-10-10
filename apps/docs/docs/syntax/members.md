@@ -65,10 +65,10 @@ You only include a modifier when a member deviates from standard behavior:
 * **Database tables:** Declare constraints such as `pk`, `fk`, `unique`, `nullable`, `index`, or `default` only when needed:
   ```draftr
   db Users
-    id: uuid pk
-    email: string unique
-    bio: text nullable
-    created_at: timestamp default
+    pk id: uuid
+    unique email: string
+    nullable bio: text
+    default created_at: timestamp
   ```
 * **UI components:** Use `prop` for incoming component properties and `emit` for component event outputs:
   ```draftr

@@ -514,51 +514,46 @@ export function parseOutline(text: string): ParseResult {
       const currentTable = tables.find(t => t.id === parent.id);
       if (currentTable) {
         const colMatch = trimmed.match(
-          /^[+\-#]?\s*([A-Za-z0-9_$]+)(\?)?\s*:\s*(.+)$/
+          /^((?:(?:pk|fk|unique|nullable|index|default)\s+)*)([A-Za-z0-9_$]+)(\?)?\s*:\s*(.+)$/i
         );
         if (colMatch) {
-          const colName = colMatch[1];
-          const colRest = colMatch[3].trim();
+          const modifiers = colMatch[1].toLowerCase();
+          const colName = colMatch[2];
+          const isOptional = !!colMatch[3];
+          const cleanType = colMatch[4].trim();
 
-          const isPrimary = /\bpk\b/i.test(colRest);
-          const isUnique = /\bunique\b/i.test(colRest) || isPrimary;
-          const isForeignKey = /\bfk\b/i.test(colRest);
-          const isNullable = /\bnullable\b/i.test(colRest) || !!colMatch[2];
-          const isIndexed = /\bindex\b/i.test(colRest);
-          const isDefault = /\bdefault\b/i.test(colRest);
+          const isPrimary = /\bpk\b/.test(modifiers);
+          const isUnique = /\bunique\b/.test(modifiers) || isPrimary;
+          let isForeignKey = /\bfk\b/.test(modifiers);
+          const isNullable = /\bnullable\b/.test(modifiers) || isOptional;
+          const isIndexed = /\bindex\b/.test(modifiers);
+          const isDefault = /\bdefault\b/.test(modifiers);
 
-          let cleanType = colRest
-            .replace(/\b(pk|unique|fk|nullable|index|default)\b/gi, '')
-            .trim();
           let references: {table: string; column: string} | undefined;
 
-          // Check for foreign key arrow: -> OtherTable.col
-          const fkArrow = cleanType.indexOf('->');
-          if (fkArrow !== -1) {
-            const refTarget = cleanType.slice(fkArrow + 2).trim();
-            cleanType = cleanType.slice(0, fkArrow).trim();
-            const dot = refTarget.indexOf('.');
-            if (dot !== -1) {
-              const refTable = refTarget.slice(0, dot).trim();
-              const refCol = refTarget.slice(dot + 1).trim();
-              references = {table: refTable, column: refCol};
-              connections.push({
-                id: `edge-${parent.id}-${colName}->${refTable}.${refCol}`,
-                sourceId: parent.id,
-                sourceMember: colName,
-                targetId: `table-${refTable}`,
-                targetMember: refCol,
-                type: 'foreignKey',
-              });
-            }
+          // Check for foreign key via dot notation in type: TargetTable.targetColumn
+          const dotIdx = cleanType.indexOf('.');
+          if (dotIdx !== -1) {
+            const refTable = cleanType.slice(0, dotIdx).trim();
+            const refCol = cleanType.slice(dotIdx + 1).trim();
+            references = {table: refTable, column: refCol};
+            isForeignKey = true;
+            connections.push({
+              id: `edge-${parent.id}-${colName}->${refTable}.${refCol}`,
+              sourceId: parent.id,
+              sourceMember: colName,
+              targetId: `table-${refTable}`,
+              targetMember: refCol,
+              type: 'foreignKey',
+            });
           }
 
           const colDef: ColumnDefinition = {
             name: colName,
-            type: cleanType || 'text',
+            type: cleanType,
             isPrimary,
             isUnique,
-            isForeignKey: isForeignKey || !!references,
+            isForeignKey,
             isNullable: isNullable || undefined,
             isIndexed: isIndexed || undefined,
             defaultValue: isDefault ? 'default' : undefined,

@@ -80,13 +80,13 @@ Use `db` to define a relational database table:
 
 ```draftr
 db Users
-  id: uuid pk
-  email: string unique
+  pk id: uuid
+  unique email: string
   created_at: timestamp
 
 db Orders
-  id: uuid pk
-  user_id: uuid fk -> Users.id
+  pk id: uuid
+  fk user_id: Users.id
   total_price: number
 ```
 
