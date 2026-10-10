@@ -15,6 +15,23 @@
 * **vscode:** replace shortcut symbols in completions and remove legacy archspec references ([683ba8f](https://github.com/MichaelSolati/draftr/commit/683ba8f80b0ae1c0c2653a190f8df15b7622d69f))
 * **vscode:** support both insert and replace ranges and add wordPattern for shortcuts ([4f2da35](https://github.com/MichaelSolati/draftr/commit/4f2da3533e81db76e805b325ef4e563263a89abc))
 
+## [0.1.3](https://github.com/MichaelSolati/draftr/compare/v0.1.2...v0.1.3) (2026-10-10)
+
+### Features
+
+* add auto-layout, layout persistence, editor polish, and unified zustand store ([982cb2e](https://github.com/MichaelSolati/draftr/commit/982cb2e77e9293850362055eee372c20f2d2f410))
+* add docusaurus docs workspace, agent guidelines, and github pages deployment ([5477a87](https://github.com/MichaelSolati/draftr/commit/5477a870ce8cda10c63d890caea1329174a9f848))
+* configure eslint-plugin-simple-import-sort and sort imports ([b8fd447](https://github.com/MichaelSolati/draftr/commit/b8fd4472e4715eafbcd8b9310b9c588f3a82694d))
+* **core,docs:** implement three-tier architecture syntax and google docs documentation ([3b4e0fc](https://github.com/MichaelSolati/draftr/commit/3b4e0fcfb3b421fff7b88f94a09852757bcbab6e))
+* enforce conventional commits with commitlint and trigger shortcuts on space ([15dce58](https://github.com/MichaelSolati/draftr/commit/15dce58e220a566a676673d001000e86073a8e9e))
+* **vscode:** modular language providers, commands, and live diagram preview ([3d736ec](https://github.com/MichaelSolati/draftr/commit/3d736ecd969372045195e68cb694bd2ec3bd6e95))
+
+### Bug Fixes
+
+* **vscode:** recognize standalone action keywords and invocation targets in syntax grammar ([3ca1483](https://github.com/MichaelSolati/draftr/commit/3ca148366a9cb9102948a27e523ffb39b9184f39))
+* **vscode:** replace shortcut symbols in completions and remove legacy archspec references ([683ba8f](https://github.com/MichaelSolati/draftr/commit/683ba8f80b0ae1c0c2653a190f8df15b7622d69f))
+* **vscode:** support both insert and replace ranges and add wordPattern for shortcuts ([4f2da35](https://github.com/MichaelSolati/draftr/commit/4f2da3533e81db76e805b325ef4e563263a89abc))
+
 ## [0.1.2](https://github.com/MichaelSolati/draftr/compare/v0.1.1...v0.1.2) (2026-10-08)
 
 ### Features

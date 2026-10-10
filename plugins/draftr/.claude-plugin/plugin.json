@@ -1,6 +1,6 @@
 {
   "name": "draftr",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Visual architecture specification builder — design software systems in Draftr and send the spec directly to Claude",
   "author": {
     "name": "Michael Solati"
