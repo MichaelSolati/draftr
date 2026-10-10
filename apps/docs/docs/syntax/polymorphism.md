@@ -1,41 +1,38 @@
 ---
 id: polymorphism
-title: Polymorphism & Contracts
-sidebar_position: 4
+title: Polymorphism and contracts
+sidebar_position: 6
 ---
 
-# Polymorphism & Contracts
+# Polymorphism and contracts
 
 Draftr supports object-oriented inheritance and interface contracts with compile-time architectural linting.
 
----
+## Keywords and usage
 
-## Keywords & Syntax
-
-* `abstract class <Name>`: Declares an uninstantiable base class.
-* `interface <Name>`: Declares a contract of method and property signatures.
-* `extends <SuperClass>`: Establishes an `inherits` relationship edge.
-* `implements <Interface1>, <Interface2>`: Establishes `implements` relationship edges.
+* **`abstract class <name>`:** Declares an uninstantiable base service.
+* **`interface <name>`:** Declares a structural contract containing required method and property signatures.
+* **`extends <super_class>`:** Establishes class inheritance between a child class and a base class.
+* **`implements <interface_1>, <interface_2>`:** Establishes contract fulfillment between a class and one or more interfaces.
 
 ```draftr
 interface Repository
-  + findById(id: string): object
-  + save(item: object): void
+  public findById(id: string): object
+  public save(item: object): void
 
 abstract class BaseService
-  + log(msg: string): void
+  public log(msg: string): void
 
 class SqlService extends BaseService implements Repository
-  + findById(id: string): object
-  + save(item: object): void
+  public findById(id: string): object
+  public save(item: object): void
 ```
 
----
+## Architectural linting
 
-## Linter Validation
+The Draftr linter validates inheritance hierarchies and contracts automatically:
 
-The Draftr linter automatically checks:
-1. **`circular-inheritance`**: Prevents circular dependency cycles (e.g. `A extends B` and `B extends A`).
-2. **`missing-interface`**: Warns if an `implements` clause names an undeclared interface.
-3. **`unimplemented-method`**: Flags classes that claim to implement an interface but omit required methods.
-4. **`signature-mismatch`**: Flags methods whose return types conflict with the interface definition.
+1. **Circular inheritance (`circular-inheritance`):** Detects and prevents circular inheritance loops (for example, where `A extends B` and `B extends A`).
+2. **Missing interface (`missing-interface`):** Flags an error if an `implements` clause references an undeclared interface.
+3. **Unimplemented methods (`unimplemented-method`):** Flags an error if an implementing class omits any method required by an interface.
+4. **Signature mismatch (`signature-mismatch`):** Warns if an implemented method declares a return type that conflicts with the interface definition.

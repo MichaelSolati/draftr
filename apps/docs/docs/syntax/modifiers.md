@@ -1,33 +1,39 @@
 ---
 id: modifiers
-title: Modifiers & Typing Shortcuts
-sidebar_position: 3
+title: Editor tooling macros
+sidebar_position: 5
 ---
 
-# Modifiers & Typing Shortcuts
+# Editor tooling macros
 
-Draftr provides both natural English keywords and high-speed single-character typing shortcuts for declaring members.
+To accelerate writing Draftr specifications, official editor extensions support shorthand macros.
 
----
+These macros are developer shortcuts, not official Draftr grammar. The strict Draftr parser expects normalized keywords (`public`, `private`, `protected`). Your editor extension automatically expands these macros into the official keywords as you type.
 
-## Member Modifiers
+## Supported macros
 
-| Keyword | Single-Character Shortcut | Semantic Scope | Example |
-| :--- | :--- | :--- | :--- |
-| `public` | `+` | Accessible anywhere | `+ id: string` or `public id: string` |
-| `private` | `-` | Restricted to containing entity | `- secret: string` or `private secret: string` |
-| `protected`| `#` | Accessible to self and subclasses | `# logger: Logger` or `protected logger: Logger` |
-| `readonly` | — | Immutable property | `readonly createdAt: timestamp` |
-| `override` | — | Overrides base class member | `override run(): void` |
+| Macro | Expands to | Description |
+| :--- | :--- | :--- |
+| `+ ` | `public ` | Sets member visibility to public. |
+| `- ` | `private ` | Sets member visibility to private. |
+| `# ` | `protected ` | Sets member visibility to protected. |
 
----
+## Tooling expansion behavior
 
-## Fast Typing Shortcuts
+When you type a shorthand symbol followed by a space at the start of a member line, the editor tooling replaces the symbol with the official visibility keyword.
 
-In the Web Editor and VS Code Extension:
+### What you type:
 
-* Type `+ ` at line start $\rightarrow$ Expands to `public `
-* Type `- ` at line start $\rightarrow$ Expands to `private `
-* Type `# ` at line start $\rightarrow$ Expands to `protected `
-* Type `-> ` at line start (under class) $\rightarrow$ Expands to `calls `
-* Type `-> ` at line start (under ui) $\rightarrow$ Expands to `binds `
+```draftr
+class OrderService
+  + processCheckout(orderData: object): boolean
+  - validateCart(): void
+```
+
+### What the extension saves (official syntax):
+
+```draftr
+class OrderService
+  public processCheckout(orderData: object): boolean
+  private validateCart(): void
+```

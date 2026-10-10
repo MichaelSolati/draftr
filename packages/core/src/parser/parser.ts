@@ -5,7 +5,9 @@ import {
   type ColumnDefinition,
   type ConnectionEdge,
   type EventSpec,
+  type FunctionSpec,
   type HttpMethod,
+  type MethodCall,
   type MethodParameter,
   type MethodSignature,
   type ParserDiagnostic,
@@ -23,11 +25,13 @@ export interface ParseResult {
   apiRoutes: ApiRouteSpec[];
   events: EventSpec[];
   states: StateSpec[];
+  functions?: FunctionSpec[];
   connections: ConnectionEdge[];
   diagnostics: ParserDiagnostic[];
 }
 
-function parseVisibility(token: string): Visibility {
+function parseVisibility(token?: string): Visibility {
+  if (!token) return 'public';
   switch (token.toLowerCase()) {
     case '-':
     case 'private':
@@ -38,8 +42,6 @@ function parseVisibility(token: string): Visibility {
     case '+':
     case 'public':
     case 'readonly':
-    case 'get':
-    case 'set':
     default:
       return 'public';
   }
@@ -53,14 +55,22 @@ function parseParameters(paramStr: string): MethodParameter[] {
   for (const part of parts) {
     const colonIdx = part.indexOf(':');
     if (colonIdx !== -1) {
+      let paramName = part.slice(0, colonIdx).trim();
+      const isOptional = paramName.endsWith('?');
+      if (isOptional) paramName = paramName.slice(0, -1).trim();
       params.push({
-        name: part.slice(0, colonIdx).trim(),
+        name: paramName,
         type: part.slice(colonIdx + 1).trim() || 'any',
+        isOptional: isOptional || undefined,
       });
     } else if (part.trim()) {
+      let paramName = part.trim();
+      const isOptional = paramName.endsWith('?');
+      if (isOptional) paramName = paramName.slice(0, -1).trim();
       params.push({
-        name: part.trim(),
+        name: paramName,
         type: 'any',
+        isOptional: isOptional || undefined,
       });
     }
   }
@@ -101,7 +111,8 @@ export function resolveTargetEntityId(
   tables: TableSpec[],
   apiRoutes: ApiRouteSpec[],
   events: EventSpec[],
-  states: StateSpec[]
+  states: StateSpec[],
+  functions?: FunctionSpec[]
 ): string {
   const matchingClass = classes.find(c => c.name === targetName);
   if (matchingClass) return matchingClass.id;
@@ -115,6 +126,8 @@ export function resolveTargetEntityId(
   if (matchingEvent) return matchingEvent.id;
   const matchingState = states.find(s => s.name === targetName);
   if (matchingState) return matchingState.id;
+  const matchingFunc = functions?.find(f => f.name === targetName);
+  if (matchingFunc) return matchingFunc.id;
   return `entity-${targetName}`;
 }
 
@@ -126,12 +139,13 @@ export function parseOutline(text: string): ParseResult {
   const apiRoutes: ApiRouteSpec[] = [];
   const events: EventSpec[] = [];
   const states: StateSpec[] = [];
+  const functions: FunctionSpec[] = [];
   const connections: ConnectionEdge[] = [];
   const diagnostics: ParserDiagnostic[] = [];
 
   interface StackItem {
     indent: number;
-    type: 'class' | 'method' | 'ui' | 'db' | 'api' | 'state';
+    type: 'class' | 'method' | 'ui' | 'db' | 'api' | 'state' | 'function';
     id: string;
     name: string;
     parentClassId?: string;
@@ -367,57 +381,132 @@ export function parseOutline(text: string): ParseResult {
       continue;
     }
 
-    // 7. UI-to-Logic binding: binds <LogicEntity>
-    const bindsMatch = trimmed.match(/^binds?\s+([A-Za-z0-9_$]+)/);
-    if (bindsMatch) {
-      if (parent && parent.type === 'ui') {
-        const targetEntity = bindsMatch[1];
-        const currentUI = uiComponents.find(u => u.id === parent.id);
-        if (currentUI && !currentUI.boundLogicEntities.includes(targetEntity)) {
-          currentUI.boundLogicEntities.push(targetEntity);
-          const targetId = resolveTargetEntityId(
-            targetEntity,
-            classes,
-            tables,
-            apiRoutes,
-            events,
-            states
-          );
-          connections.push({
-            id: `edge-${parent.id}-binds-${targetEntity}`,
-            sourceId: parent.id,
-            targetId,
-            type: 'binds',
-          });
-        }
-      } else if (parent && parent.type === 'class') {
-        const targetEntity = bindsMatch[1];
-        const currentClass = classes.find(c => c.id === parent.id);
-        if (currentClass) {
-          const targetId = resolveTargetEntityId(
-            targetEntity,
-            classes,
-            tables,
-            apiRoutes,
-            events,
-            states
-          );
-          connections.push({
-            id: `edge-${currentClass.id}-calls->${targetEntity}`,
-            sourceId: currentClass.id,
-            targetId,
-            type: 'invokes',
-          });
-        }
+    // 6b. Standalone Function Declaration: [public|private|protected] function <Name>(<params>)[: <ReturnType>]
+    const funcMatch = trimmed.match(
+      /^(?:(public|private|protected)\s+)?function\s+([A-Za-z0-9_$]+)(?:\((.*?)\))?(?:\s*:\s*(.+))?/i
+    );
+    if (funcMatch) {
+      const visibility = parseVisibility(funcMatch[1]);
+      const name = funcMatch[2];
+      const paramStr = funcMatch[3] || '';
+      const returnType = funcMatch[4] ? funcMatch[4].trim() : 'void';
+      const params = parseParameters(paramStr);
+      const id = `func-${name}`;
+
+      const existing = functions.find(f => f.name === name);
+      if (!existing) {
+        functions.push({
+          id,
+          name,
+          visibility,
+          parameters: params,
+          returnType,
+          calls: [],
+        });
+        stack.push({indent, type: 'function', id, name});
       } else {
         diagnostics.push({
           line: lineNum,
-          message:
-            '"bind" or "binds" keyword must be nested under a UI component or class',
+          message: `Duplicate function declaration "${name}"`,
           severity: 'warning',
         });
       }
       continue;
+    }
+
+    // 7. Members under UI Component (props, emits, render, child ui, binds)
+    if (parent && parent.type === 'ui') {
+      const currentUI = uiComponents.find(u => u.id === parent.id);
+      if (currentUI) {
+        // Child UI: ui <ChildName>
+        const childUiMatch = trimmed.match(/^ui\s+([A-Za-z0-9_$]+)/i);
+        if (childUiMatch) {
+          const childName = childUiMatch[1];
+          const childId = `ui-${childName}`;
+          currentUI.children.push(childName);
+          uiComponents.push({
+            id: childId,
+            name: childName,
+            parentId: currentUI.id,
+            children: [],
+            boundLogicEntities: [],
+            props: [],
+            emits: [],
+            renderedComponents: [],
+          });
+          stack.push({indent, type: 'ui', id: childId, name: childName});
+          continue;
+        }
+
+        // Prop: prop <name>[?]: <type>
+        const propMatch = trimmed.match(
+          /^prop\s+([A-Za-z0-9_$]+)(\?)?\s*:\s*(.+)$/i
+        );
+        if (propMatch) {
+          if (!currentUI.props) currentUI.props = [];
+          currentUI.props.push({
+            name: propMatch[1],
+            type: propMatch[3].trim(),
+            isOptional: !!propMatch[2] || undefined,
+          });
+          continue;
+        }
+
+        // Emit: emit <name>: <payloadType>
+        const emitMatch = trimmed.match(
+          /^emit\s+([A-Za-z0-9_$]+)\s*:\s*(.+)$/i
+        );
+        if (emitMatch) {
+          if (!currentUI.emits) currentUI.emits = [];
+          currentUI.emits.push({
+            name: emitMatch[1],
+            payloadType: emitMatch[2].trim(),
+          });
+          continue;
+        }
+
+        // Render: render [ui.]<ComponentName>
+        const renderMatch = trimmed.match(
+          /^render\s+(?:ui\.)?([A-Za-z0-9_$]+)/i
+        );
+        if (renderMatch) {
+          const renderedName = renderMatch[1];
+          if (!currentUI.renderedComponents) currentUI.renderedComponents = [];
+          currentUI.renderedComponents.push(renderedName);
+          connections.push({
+            id: `edge-${currentUI.id}-renders-ui-${renderedName}`,
+            sourceId: currentUI.id,
+            targetId: `ui-${renderedName}`,
+            type: 'render',
+          });
+          continue;
+        }
+
+        // UI-to-Logic binding: binds <LogicEntity>
+        const bindsMatch = trimmed.match(/^binds?\s+([A-Za-z0-9_$]+)/i);
+        if (bindsMatch) {
+          const targetEntity = bindsMatch[1];
+          if (!currentUI.boundLogicEntities.includes(targetEntity)) {
+            currentUI.boundLogicEntities.push(targetEntity);
+            const targetId = resolveTargetEntityId(
+              targetEntity,
+              classes,
+              tables,
+              apiRoutes,
+              events,
+              states,
+              functions
+            );
+            connections.push({
+              id: `edge-${parent.id}-binds-${targetEntity}`,
+              sourceId: parent.id,
+              targetId,
+              type: 'binds',
+            });
+          }
+          continue;
+        }
+      }
     }
 
     // 8. Members under Database Table
@@ -425,17 +514,22 @@ export function parseOutline(text: string): ParseResult {
       const currentTable = tables.find(t => t.id === parent.id);
       if (currentTable) {
         const colMatch = trimmed.match(
-          /^[+\-#]?\s*([A-Za-z0-9_$]+)\s*:\s*(.+)$/
+          /^[+\-#]?\s*([A-Za-z0-9_$]+)(\?)?\s*:\s*(.+)$/
         );
         if (colMatch) {
           const colName = colMatch[1];
-          const colRest = colMatch[2].trim();
+          const colRest = colMatch[3].trim();
 
           const isPrimary = /\bpk\b/i.test(colRest);
           const isUnique = /\bunique\b/i.test(colRest) || isPrimary;
           const isForeignKey = /\bfk\b/i.test(colRest);
+          const isNullable = /\bnullable\b/i.test(colRest) || !!colMatch[2];
+          const isIndexed = /\bindex\b/i.test(colRest);
+          const isDefault = /\bdefault\b/i.test(colRest);
 
-          let cleanType = colRest.replace(/\b(pk|unique|fk)\b/gi, '').trim();
+          let cleanType = colRest
+            .replace(/\b(pk|unique|fk|nullable|index|default)\b/gi, '')
+            .trim();
           let references: {table: string; column: string} | undefined;
 
           // Check for foreign key arrow: -> OtherTable.col
@@ -465,6 +559,9 @@ export function parseOutline(text: string): ParseResult {
             isPrimary,
             isUnique,
             isForeignKey: isForeignKey || !!references,
+            isNullable: isNullable || undefined,
+            isIndexed: isIndexed || undefined,
+            defaultValue: isDefault ? 'default' : undefined,
             references,
           };
           currentTable.columns.push(colDef);
@@ -526,17 +623,34 @@ export function parseOutline(text: string): ParseResult {
       }
     }
 
-    // 10. Members under State Slice: + field: type
+    // 10. Members under State Slice
     if (parent && parent.type === 'state') {
       const currentState = states.find(s => s.id === parent.id);
       if (currentState) {
+        // action <name>(<params>)[: <returnType>]
+        const actionMatch = trimmed.match(
+          /^action\s+([A-Za-z0-9_$]+)(?:\((.*?)\))?(?:\s*:\s*(.+))?/i
+        );
+        if (actionMatch) {
+          currentState.fields.push({
+            name: actionMatch[1],
+            type: actionMatch[3] ? actionMatch[3].trim() : 'void',
+            modifier: 'action',
+          });
+          continue;
+        }
+
+        // [get|set] <name>: <type> or [+\-#]? <name>: <type>
         const fieldMatch = trimmed.match(
-          /^[+\-#]?\s*([A-Za-z0-9_$]+)\s*:\s*(.+)$/
+          /^(?:([+\-#]|get|set)\s+)?([A-Za-z0-9_$]+)\s*:\s*(.+)$/i
         );
         if (fieldMatch) {
+          const mod = fieldMatch[1]?.toLowerCase();
+          const modifier = mod === 'get' || mod === 'set' ? mod : undefined;
           currentState.fields.push({
-            name: fieldMatch[1],
-            type: fieldMatch[2].trim(),
+            name: fieldMatch[2],
+            type: fieldMatch[3].trim(),
+            modifier,
           });
           continue;
         }
@@ -548,12 +662,29 @@ export function parseOutline(text: string): ParseResult {
       const currentClass = classes.find(c => c.id === parent.id);
       if (!currentClass) continue;
 
-      const memberMatch = trimmed.match(
-        /^([+\-#]|(?:public|private|protected|readonly|get|set)\b)\s*(.*)$/i
-      );
-      if (memberMatch) {
+      // Parse modifiers / visibility: [visibility]? [modifier]? ...
+      const classMemberRegex =
+        /^(?:([+\-#]|public|private|protected|readonly)\s+)?(?:(static|async|get|set)\s+)?(.*)$/i;
+      const memberMatch = trimmed.match(classMemberRegex);
+
+      if (
+        memberMatch &&
+        (memberMatch[1] ||
+          memberMatch[2] ||
+          /^[A-Za-z0-9_$]+(\?|\s*\(|\s*:)/.test(trimmed)) &&
+        !/^(call|calls|emit|emits|dispatch|dispatches|query|queries|mutate|mutates|render|renders|invokes|binds?|->)\b/i.test(
+          trimmed
+        )
+      ) {
         const visibility = parseVisibility(memberMatch[1]);
-        const memberContent = memberMatch[2].trim();
+        const modifierStr = memberMatch[2]?.toLowerCase();
+        const isStatic = modifierStr === 'static' ? true : undefined;
+        const isAsync = modifierStr === 'async' ? true : undefined;
+        const accessor =
+          modifierStr === 'get' || modifierStr === 'set'
+            ? (modifierStr as 'get' | 'set')
+            : undefined;
+        const memberContent = (memberMatch[3] || '').trim();
 
         let inlineCall: {targetClass: string; targetMethod: string} | null =
           null;
@@ -620,6 +751,9 @@ export function parseOutline(text: string): ParseResult {
             visibility,
             parameters: params,
             returnType,
+            isStatic,
+            isAsync,
+            accessor,
             calls: callList,
           };
           currentClass.methods.push(methodSignature);
@@ -638,7 +772,8 @@ export function parseOutline(text: string): ParseResult {
               tables,
               apiRoutes,
               events,
-              states
+              states,
+              functions
             );
             connections.push({
               id: `edge-${parent.id}-${methodName}->${inlineCall.targetClass}${inlineCall.targetMethod ? '.' + inlineCall.targetMethod : ''}`,
@@ -652,15 +787,21 @@ export function parseOutline(text: string): ParseResult {
           continue;
         }
 
-        const propMatch = mainContent.match(/^([A-Za-z0-9_$]+)\s*:\s*(.+)$/);
+        const propMatch = mainContent.match(
+          /^([A-Za-z0-9_$]+)(\?)?\s*:\s*(.+)$/
+        );
         if (propMatch) {
           const propName = propMatch[1];
-          const propType = propMatch[2].trim();
+          const isOptional = !!propMatch[2] || undefined;
+          const propType = propMatch[3].trim();
 
           const propertyDef: PropertyDefinition = {
             name: propName,
             visibility,
             type: propType,
+            isOptional,
+            isStatic,
+            accessor,
           };
           currentClass.properties.push(propertyDef);
           continue;
@@ -674,15 +815,37 @@ export function parseOutline(text: string): ParseResult {
         continue;
       }
 
-      // Direct class dependency / call: calls Target, -> Target, or binds Target
+      // Direct class dependency / call: calls Target, -> Target, or binds Target, or call/emit/dispatch/query/mutate/render
       const callMatch = trimmed.match(
-        /^(calls|invokes|->|binds?)(?:\s+([A-Za-z0-9_$.]+))?/i
+        /^(calls?|invokes?|->|binds?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)(?:\s+(.+))?$/i
       );
       if (callMatch) {
         const keyword = callMatch[1].toLowerCase();
-        const isBinds = keyword === 'binds' || keyword === 'bind';
-        const targetStr = (callMatch[2] || '').trim();
-        if (!targetStr) {
+        let verb:
+          | 'call'
+          | 'emit'
+          | 'dispatch'
+          | 'query'
+          | 'mutate'
+          | 'render'
+          | 'binds'
+          | 'invokes' = 'call';
+        if (keyword.startsWith('emit')) verb = 'emit';
+        else if (keyword.startsWith('dispatch')) verb = 'dispatch';
+        else if (keyword.startsWith('query')) verb = 'query';
+        else if (keyword.startsWith('mutate')) verb = 'mutate';
+        else if (keyword.startsWith('render')) verb = 'render';
+        else if (keyword.startsWith('bind')) verb = 'binds';
+        else if (
+          keyword === '->' ||
+          keyword.startsWith('invoke') ||
+          keyword.startsWith('call')
+        )
+          verb = 'invokes';
+
+        const isBinds = verb === 'binds';
+        const rawTargetStr = (callMatch[2] || '').trim();
+        if (!rawTargetStr) {
           diagnostics.push({
             line: lineNum,
             message: `Incomplete invocation statement: expected target entity after "${callMatch[1]}"`,
@@ -690,16 +853,24 @@ export function parseOutline(text: string): ParseResult {
           });
           continue;
         }
+
+        // Parse target.member(payload)
+        let targetStr = rawTargetStr;
+        let payload: string | undefined;
+        const parenIdx = targetStr.indexOf('(');
+        if (parenIdx !== -1 && targetStr.endsWith(')')) {
+          payload = targetStr.slice(parenIdx + 1, -1).trim();
+          targetStr = targetStr.slice(0, parenIdx).trim();
+        }
+
+        // Support prefixes like ui.Component
+        let targetClass = targetStr;
+        let targetMethod = '';
         const dotIdx = targetStr.indexOf('.');
-        let targetClass =
-          dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : targetStr;
-        const targetMethod =
-          dotIdx !== -1
-            ? targetStr
-                .slice(dotIdx + 1)
-                .trim()
-                .replace(/\(\s*\)$/, '')
-            : '';
+        if (dotIdx !== -1) {
+          targetClass = targetStr.slice(0, dotIdx).trim();
+          targetMethod = targetStr.slice(dotIdx + 1).trim();
+        }
 
         if (
           targetClass.toLowerCase() === 'this' ||
@@ -719,7 +890,8 @@ export function parseOutline(text: string): ParseResult {
           tables,
           apiRoutes,
           events,
-          states
+          states,
+          functions
         );
 
         if (lastMethod) {
@@ -731,7 +903,17 @@ export function parseOutline(text: string): ParseResult {
               c.targetClass === targetClass && c.targetMethod === targetMethod
           );
           if (!alreadyHasCall) {
-            lastMethod.calls.push({targetClass, targetMethod});
+            const callObj: MethodCall = {
+              targetClass,
+              targetMethod,
+            };
+            if (verb !== 'call' && verb !== 'invokes' && verb !== 'binds') {
+              callObj.verb = verb;
+            }
+            if (payload) {
+              callObj.payload = payload;
+            }
+            lastMethod.calls.push(callObj);
           }
 
           const alreadyHasConn = connections.some(
@@ -749,7 +931,10 @@ export function parseOutline(text: string): ParseResult {
               sourceMember: lastMethod.name,
               targetId,
               targetMember: targetMethod || undefined,
-              type: 'invokes',
+              type:
+                verb === 'call' || verb === 'invokes' || verb === 'binds'
+                  ? 'invokes'
+                  : verb,
             });
           }
         } else {
@@ -758,29 +943,69 @@ export function parseOutline(text: string): ParseResult {
             sourceId: currentClass.id,
             targetId,
             targetMember: targetMethod || undefined,
-            type: 'invokes',
+            type:
+              verb === 'call' || verb === 'invokes' || verb === 'binds'
+                ? 'invokes'
+                : verb,
           });
         }
         continue;
       }
     }
 
-    // 12. Invocations under Method: -> Target.method, calls Target.method, or - Target.method / + Target.method
-    if (parent && parent.type === 'method') {
-      const parentClass = classes.find(c => c.id === parent.parentClassId);
+    // 12. Invocations under Method or Function: call Target.method(args), etc.
+    if (parent && (parent.type === 'method' || parent.type === 'function')) {
+      const parentClass =
+        parent.type === 'method'
+          ? classes.find(c => c.id === parent.parentClassId)
+          : null;
       const parentMethod = parentClass?.methods.find(
         m => m.name === parent.name
       );
+      const parentFunction =
+        parent.type === 'function'
+          ? functions.find(f => f.id === parent.id)
+          : null;
 
-      if (parentClass && parentMethod) {
-        // Strip leading symbols: '->', 'calls', '-', '+', '*'
+      if ((parentClass && parentMethod) || parentFunction) {
+        let verb:
+          | 'call'
+          | 'emit'
+          | 'dispatch'
+          | 'query'
+          | 'mutate'
+          | 'render'
+          | undefined;
         let targetStr = trimmed;
+
+        // Strip leading symbols: '->', 'calls', '-', '+', '*', or verbs
         if (targetStr.startsWith('->')) {
           targetStr = targetStr.slice(2).trim();
-        } else if (/^(calls|invokes)\b/i.test(targetStr)) {
-          targetStr = targetStr.replace(/^(calls|invokes)\b/i, '').trim();
         } else if (/^[+\-*]\s*(->)?\s*/.test(targetStr)) {
           targetStr = targetStr.replace(/^[+\-*]\s*(->)?\s*/, '').trim();
+        } else {
+          const verbMatch = targetStr.match(
+            /^(call|calls|emit|emits|dispatch|dispatches|query|queries|mutate|mutates|render|renders|invokes)\b/i
+          );
+          if (verbMatch) {
+            const v = verbMatch[1].toLowerCase();
+            if (v.startsWith('emit')) verb = 'emit';
+            else if (v.startsWith('dispatch')) verb = 'dispatch';
+            else if (v.startsWith('query')) verb = 'query';
+            else if (v.startsWith('mutate')) verb = 'mutate';
+            else if (v.startsWith('render')) verb = 'render';
+            else if (v === 'call') verb = 'call';
+            targetStr = targetStr.slice(verbMatch[0].length).trim();
+          }
+        }
+
+        let payload: string | undefined;
+        const parenIdx = targetStr.indexOf('(');
+        if (parenIdx !== -1 && targetStr.endsWith(')')) {
+          payload = targetStr.slice(parenIdx + 1, -1).trim();
+          targetStr = targetStr.slice(0, parenIdx).trim();
+        } else if (targetStr.endsWith('()')) {
+          targetStr = targetStr.slice(0, -2).trim();
         }
 
         if (targetStr) {
@@ -789,18 +1014,16 @@ export function parseOutline(text: string): ParseResult {
             dotIdx !== -1 ? targetStr.slice(0, dotIdx).trim() : '';
           let targetMethod =
             dotIdx !== -1
-              ? targetStr
-                  .slice(dotIdx + 1)
-                  .trim()
-                  .replace(/\(\s*\)$/, '')
-              : targetStr.replace(/\(\s*\)$/, '').trim();
+              ? targetStr.slice(dotIdx + 1).trim()
+              : targetStr.trim();
 
           if (dotIdx === -1) {
-            const cleaned = targetStr.replace(/\(\s*\)$/, '').trim();
+            const cleaned = targetStr.trim();
             const isLocal =
-              parentClass.methods.some(m => m.name === cleaned) ||
-              /^[a-z]/.test(cleaned);
-            if (isLocal) {
+              parentClass &&
+              (parentClass.methods.some(m => m.name === cleaned) ||
+                /^[a-z]/.test(cleaned));
+            if (isLocal && parentClass) {
               targetClass = parentClass.name;
               targetMethod = cleaned;
             } else {
@@ -808,21 +1031,34 @@ export function parseOutline(text: string): ParseResult {
               targetMethod = '';
             }
           } else if (
-            targetClass.toLowerCase() === 'this' ||
-            targetClass.toLowerCase() === 'self'
+            parentClass &&
+            (targetClass.toLowerCase() === 'this' ||
+              targetClass.toLowerCase() === 'self')
           ) {
             targetClass = parentClass.name;
           }
 
-          if (!parentMethod.calls) {
-            parentMethod.calls = [];
-          }
-          const alreadyHasCall = parentMethod.calls.some(
-            c =>
-              c.targetClass === targetClass && c.targetMethod === targetMethod
-          );
-          if (!alreadyHasCall) {
-            parentMethod.calls.push({targetClass, targetMethod});
+          const callList = parentMethod
+            ? parentMethod.calls
+            : parentFunction?.calls;
+          if (callList) {
+            const alreadyHasCall = callList.some(
+              c =>
+                c.targetClass === targetClass && c.targetMethod === targetMethod
+            );
+            if (!alreadyHasCall) {
+              const callObj: MethodCall = {
+                targetClass,
+                targetMethod,
+              };
+              if (verb) {
+                callObj.verb = verb;
+              }
+              if (payload) {
+                callObj.payload = payload;
+              }
+              callList.push(callObj);
+            }
           }
 
           const targetId = resolveTargetEntityId(
@@ -831,31 +1067,40 @@ export function parseOutline(text: string): ParseResult {
             tables,
             apiRoutes,
             events,
-            states
+            states,
+            functions
           );
+
+          const sourceId = parentClass ? parentClass.id : parentFunction!.id;
+          const sourceMember = parentMethod ? parentMethod.name : undefined;
 
           const alreadyHasConn = connections.some(
             c =>
-              c.sourceId === parentClass.id &&
-              c.sourceMember === parentMethod.name &&
+              c.sourceId === sourceId &&
+              c.sourceMember === sourceMember &&
               c.targetId === targetId &&
               c.targetMember === (targetMethod || undefined)
           );
 
           if (!alreadyHasConn) {
+            const connType = !verb || verb === 'call' ? 'invokes' : verb;
             connections.push({
-              id: `edge-${parentClass.id}-${parentMethod.name}->${targetClass}.${targetMethod}`,
-              sourceId: parentClass.id,
-              sourceMember: parentMethod.name,
+              id: `edge-${sourceId}-${sourceMember || 'call'}->${targetClass}.${targetMethod}`,
+              sourceId,
+              sourceMember,
               targetId,
               targetMember: targetMethod || undefined,
-              type: 'invokes',
+              type: connType,
             });
           }
           continue;
         }
 
-        if (/^(calls|invokes|->)$/i.test(trimmed)) {
+        if (
+          /^(call|calls|emit|emits|dispatch|dispatches|query|queries|mutate|mutates|render|renders|invokes|->)$/i.test(
+            trimmed
+          )
+        ) {
           diagnostics.push({
             line: lineNum,
             message: `Incomplete invocation statement: expected target entity or method after "${trimmed}"`,
@@ -899,6 +1144,11 @@ export function parseOutline(text: string): ParseResult {
         conn.targetId = matchingState.id;
         continue;
       }
+      const matchingFunction = functions.find(f => f.name === targetName);
+      if (matchingFunction) {
+        conn.targetId = matchingFunction.id;
+        continue;
+      }
     }
   }
 
@@ -909,6 +1159,7 @@ export function parseOutline(text: string): ParseResult {
     apiRoutes,
     events,
     states,
+    functions,
     connections,
     diagnostics,
   };

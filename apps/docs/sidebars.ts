@@ -9,9 +9,12 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'syntax/blocks',
-        'syntax/relationships',
+        'syntax/members',
+        'syntax/invocations',
+        'syntax/operators',
         'syntax/modifiers',
         'syntax/polymorphism',
+        'syntax/relationships',
       ],
     },
     {

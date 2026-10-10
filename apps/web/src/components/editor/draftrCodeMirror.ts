@@ -58,7 +58,9 @@ export const draftrStreamParser = {
 
       // Top-level block declarations
       if (
-        /^(class|interface|type|ui|db|api|event|state|abstract)$/i.test(str)
+        /^(class|interface|type|ui|db|api|event|state|abstract|function)$/i.test(
+          str
+        )
       ) {
         return 'keyword';
       }
@@ -69,7 +71,11 @@ export const draftrStreamParser = {
       }
 
       // Actions / Invocations
-      if (/^(binds?|calls|invokes)$/i.test(str)) {
+      if (
+        /^(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)$/i.test(
+          str
+        )
+      ) {
         return 'action';
       }
 
@@ -79,12 +85,16 @@ export const draftrStreamParser = {
       }
 
       // Modifiers
-      if (/^(public|private|protected|readonly|get|set|override)$/i.test(str)) {
+      if (
+        /^(public|private|protected|readonly|get|set|override|static|async|prop|action)$/i.test(
+          str
+        )
+      ) {
         return 'modifier';
       }
 
       // Database modifiers
-      if (/^(pk|fk|unique)$/i.test(str)) {
+      if (/^(pk|fk|unique|nullable|index|default)$/i.test(str)) {
         return 'modifier';
       }
 

@@ -97,49 +97,44 @@ export const SyntaxDocPanel: React.FC<SyntaxDocPanelProps> = ({
 
   const sections: SectionItem[] = [
     {
-      title: 'Class & Method Invocations (Level 1, 2, and 3)',
-      desc: 'Declare classes at the root (0 spaces), methods at level 2 (2 spaces), and invocations at level 3 (4 spaces) using "calls Target.method" or "-> Target.method".',
-      code: 'class OrderService\n  public checkout(cart: Cart): Order\n    calls PaymentService.charge\n    calls InventoryService.reserve\n\nclass PaymentService\n  public charge(amount: number): Receipt',
+      title: 'Level 1: Object Declarations',
+      desc: 'Declare root entities with "class", "abstract class", "interface", "type", "db", "api", "ui", "event", "state", and "function".',
+      code: 'class OrderService\n\ninterface PaymentGateway\n\ndb Orders\n\nfunction calculateTax(amount: number): number',
     },
     {
-      title: 'Shortcuts & Visibility Modifiers',
-      desc: 'Type "+" or "-" followed by a space at line start to expand to "public " or "private ". Type "->" followed by a space to expand to "calls " (under classes) or "binds " (under UI). You can also use "#" or "protected".',
-      code: 'class UserService\n  public login(email: string): Session\n  private hashPassword(raw: string): string\n  public profile: UserProfile',
+      title: 'Level 2: Member Definitions & Defaults',
+      desc: 'Members default to "public" visibility and "void" return types. Supports optional fields with "?" and union types with "|".',
+      code: 'class UserService\n  getUser(id: string): User\n  avatarUrl?: string\n  status: "active" | "inactive"\n  private hashPassword(raw: string): string',
     },
     {
-      title: 'Polymorphism & Contracts (extends & implements)',
-      desc: 'Declare base classes with "abstract class" or contracts with "interface". Classes inherit with "extends <SuperClass>" and satisfy contracts with "implements <InterfaceA>, <InterfaceB>". The linter automatically validates inheritance targets, detects cycles, and checks method contracts.',
-      code: 'interface Repository\n  + findById(id: string): object\n  + save(item: object): void\n\nabstract class BaseService\n  + log(msg: string): void\n\nclass SqlService extends BaseService implements Repository\n  + findById(id: string): object\n  + save(item: object): void',
+      title: 'Level 3: Invocations & Verbs',
+      desc: 'Connect components using verbs: "call" (class/api/function), "emit" (event/ui), "dispatch" (state), "query"/"mutate" (db), and "render" (ui).',
+      code: 'class OrderService\n  checkout(cart: Cart): Order\n    call PaymentService.charge(cart.total)\n    query Inventory.findBySku(cart.sku)\n    dispatch CartStore.reset()\n    emit OrderPlaced(cart.id)',
     },
     {
-      title: 'Return Types Referencing Other Entities',
-      desc: 'Specify direct or dot-notated entity return types. Referenced entities appear as clickable chips and maintain architectural graph connections.',
-      code: 'class MainService\n  public start(): Pi.help\n  public hi(a: string): string\n\nclass Pi\n  public help: string',
+      title: 'Polymorphism & Contracts',
+      desc: 'Inherit base implementations with "extends" and satisfy interface contracts with "implements".',
+      code: 'interface Repository\n  findById(id: string): object\n  save(item: object): void\n\nabstract class BaseService\n  log(msg: string): void\n\nclass SqlService extends BaseService implements Repository\n  findById(id: string): object\n  save(item: object): void',
     },
     {
-      title: 'Database Tables & Foreign Keys',
-      desc: 'Use "db <TableName>" with "+ <col>: <type>". Support "pk", "fk", and "unique". Point foreign keys to target tables with "-> OtherTable.col".',
-      code: 'db Users\n  + id: uuid pk\n  + email: string unique\n\ndb Orders\n  + id: uuid pk\n  + user_id: uuid fk -> Users.id\n  + total: number',
+      title: 'Database Tables & Constraints',
+      desc: 'Declare tables with "db <Name>" and columns with modifiers: "pk", "fk", "unique", "nullable", "index", and "default".',
+      code: 'db Users\n  id: uuid pk\n  email: string unique\n  nickname?: string nullable\n\ndb Orders\n  id: uuid pk\n  user_id: uuid fk -> Users.id\n  status: string default',
     },
     {
       title: 'REST API Routes',
-      desc: 'Define API endpoints with HTTP verbs (GET, POST, PUT, DELETE, PATCH). Link endpoints directly to backend service handlers with "->".',
-      code: 'api /api/v1/orders\n  + POST /checkout(OrderPayload): OrderResponse -> OrderService.checkout\n  + GET /list(): Order[]',
+      desc: 'Define endpoints using HTTP verbs (GET, POST, PUT, DELETE, PATCH). Connect endpoints to handlers with "->".',
+      code: 'api /api/v1/orders\n  POST /checkout(OrderPayload): OrderResponse -> OrderService.checkout\n  GET /list(): Order[]',
     },
     {
-      title: 'UI Components & Bound Services',
-      desc: 'Declare UI trees with nested components. Connect UI components to logic services with "binds ServiceName".',
-      code: 'ui CheckoutPage\n  binds OrderService\n  ui OrderSummary\n  ui PaymentForm\n    binds PaymentService',
+      title: 'UI Components & Composition',
+      desc: 'Declare UI trees with "prop", "emit", and "render". The payload block is omitted on "render" for clean component trees.',
+      code: 'ui AppLayout\n  prop title: string\n  prop sidebarVisible?: boolean\n  emit logout: void\n  render ui.NavigationSidebar\n  binds AuthService',
     },
     {
-      title: 'Event Pub/Sub & Messaging',
-      desc: 'Declare standalone events or emit events from inside service methods using "emits EventName".',
-      code: 'event OrderCreated(OrderEventPayload) -> NotificationService.send\n\nclass OrderService\n  public checkout(): void\n    emits OrderCreated',
-    },
-    {
-      title: 'Client State Slices',
-      desc: 'Declare client state stores and frontend models using "state <SliceName>".',
-      code: 'state CartState\n  + items: CartItem[]\n  + total: number\n  + isCheckingOut: boolean',
+      title: 'State Store Slices',
+      desc: 'Define client state slices with standard state properties, computed accessors ("get"), and actions ("action").',
+      code: 'state CartStore\n  items: CartItem[]\n  get total: number\n  action addItem(item: CartItem): void\n  action reset(): void',
     },
   ];
 

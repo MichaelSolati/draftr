@@ -46,7 +46,7 @@
     "declarations": {
       "patterns": [
         {
-          "match": "\\b(abstract\\s+class|class|interface|type|ui|db|api|event|state)\\s+([A-Za-z0-9_$/]+)",
+          "match": "\\b(abstract\\s+class|class|interface|type|ui|db|api|event|state|function)\\s+([A-Za-z0-9_$/]+)",
           "captures": {
             "1": { "name": "keyword.control.declaration.draftr" },
             "2": { "name": "entity.name.type.class.draftr" }
@@ -65,7 +65,7 @@
     "modifiers": {
       "patterns": [
         {
-          "match": "\\b(public|private|protected|readonly|get|set|override)\\b",
+          "match": "\\b(public|private|protected|readonly|get|set|override|static|async|prop|action)\\b",
           "name": "storage.modifier.draftr"
         },
         {
@@ -79,7 +79,7 @@
     "actions": {
       "patterns": [
         {
-          "match": "\\b(binds?|calls|invokes)\\b\\s+([A-Za-z0-9_$]+)\\s*\\(",
+          "match": "\\b(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\\b\\s+([A-Za-z0-9_$]+)\\s*\\(",
           "captures": {
             "1": { "name": "keyword.control.action.draftr" },
             "2": { "name": "entity.name.function.draftr" }
@@ -93,7 +93,7 @@
           }
         },
         {
-          "match": "\\b(binds?|calls|invokes)\\b\\s+([A-Za-z0-9_$]+)(?:\\.([A-Za-z0-9_$]+))?",
+          "match": "\\b(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\\b\\s+([A-Za-z0-9_$]+)(?:\\.([A-Za-z0-9_$]+))?",
           "captures": {
             "1": { "name": "keyword.control.action.draftr" },
             "2": { "name": "entity.name.type.class.draftr" },
@@ -109,7 +109,7 @@
           }
         },
         {
-          "match": "\\b(binds?|calls|invokes)\\b",
+          "match": "\\b(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\\b",
           "name": "keyword.control.action.draftr"
         },
         {
@@ -129,7 +129,7 @@
     "db_modifiers": {
       "patterns": [
         {
-          "match": "\\b(pk|fk|unique)\\b",
+          "match": "\\b(pk|fk|unique|nullable|index|default)\\b",
           "name": "storage.modifier.database.draftr"
         }
       ]

@@ -455,4 +455,127 @@ class Po
       },
     ]);
   });
+
+  it('parses Three-Tier Architecture with implicit defaults, modifiers, and Level 3 verbs', () => {
+    const text = `
+class UserService
+  getUser(id: string): User
+  avatarUrl?: string
+  status: "active" | "pending" | "archived"
+  static defaultRole: string
+  async authenticate(credentials: object): boolean
+    call Database.findUser(credentials)
+    dispatch UserStore.setUser(user)
+    emit UserLoggedIn(user.id)
+    query UsersTable.select(user.id)
+    mutate UsersTable.update(user.id)
+
+function calculateTax(subtotal: number, rate?: number): number
+  call TaxService.getRate(rate)
+
+ui UserProfileView
+  prop user: User
+  prop showDetails?: boolean
+  emit onSave: User
+  render ui.AvatarComponent
+  binds UserService
+
+db UsersTable
+  id: uuid pk
+  email: string unique
+  nickname?: string nullable index
+  created_at: timestamp default
+
+state UserStore
+  currentUser: User
+  get isAuthenticated: boolean
+  action setUser(user: User): void
+`;
+    const result = parseOutline(text);
+
+    // 1. Classes & defaults
+    const userService = result.classes.find(c => c.name === 'UserService');
+    expect(userService).toBeDefined();
+    expect(userService?.methods[0].name).toBe('getUser');
+    expect(userService?.methods[0].visibility).toBe('public'); // Implicit public
+    expect(userService?.properties[0].name).toBe('avatarUrl');
+    expect(userService?.properties[0].isOptional).toBe(true);
+    expect(userService?.properties[1].type).toBe(
+      '"active" | "pending" | "archived"'
+    );
+    expect(userService?.properties[2].isStatic).toBe(true);
+
+    const authMethod = userService?.methods.find(
+      m => m.name === 'authenticate'
+    );
+    expect(authMethod?.isAsync).toBe(true);
+    expect(authMethod?.calls).toHaveLength(5);
+    expect(authMethod?.calls?.[0]).toEqual({
+      targetClass: 'Database',
+      targetMethod: 'findUser',
+      verb: 'call',
+      payload: 'credentials',
+    });
+    expect(authMethod?.calls?.[1]).toEqual({
+      targetClass: 'UserStore',
+      targetMethod: 'setUser',
+      verb: 'dispatch',
+      payload: 'user',
+    });
+    expect(authMethod?.calls?.[2]).toEqual({
+      targetClass: 'UserLoggedIn',
+      targetMethod: '',
+      verb: 'emit',
+      payload: 'user.id',
+    });
+    expect(authMethod?.calls?.[3]).toEqual({
+      targetClass: 'UsersTable',
+      targetMethod: 'select',
+      verb: 'query',
+      payload: 'user.id',
+    });
+    expect(authMethod?.calls?.[4]).toEqual({
+      targetClass: 'UsersTable',
+      targetMethod: 'update',
+      verb: 'mutate',
+      payload: 'user.id',
+    });
+
+    // 2. Standalone Functions
+    expect(result.functions).toHaveLength(1);
+    const taxFn = result.functions?.[0];
+    expect(taxFn?.name).toBe('calculateTax');
+    expect(taxFn?.parameters[1].isOptional).toBe(true);
+    expect(taxFn?.calls).toHaveLength(1);
+    expect(taxFn?.calls?.[0].verb).toBe('call');
+
+    // 3. UI Components & Composition
+    const profileUI = result.uiComponents.find(
+      u => u.name === 'UserProfileView'
+    );
+    expect(profileUI).toBeDefined();
+    expect(profileUI?.props?.[0].name).toBe('user');
+    expect(profileUI?.props?.[1].isOptional).toBe(true);
+    expect(profileUI?.emits?.[0].name).toBe('onSave');
+    expect(profileUI?.renderedComponents).toContain('AvatarComponent');
+
+    // 4. DB Constraints
+    const db = result.tables.find(t => t.name === 'UsersTable');
+    expect(db).toBeDefined();
+    expect(db?.columns.find(c => c.name === 'nickname')?.isNullable).toBe(true);
+    expect(db?.columns.find(c => c.name === 'nickname')?.isIndexed).toBe(true);
+    expect(db?.columns.find(c => c.name === 'created_at')?.defaultValue).toBe(
+      'default'
+    );
+
+    // 5. State Store
+    const stateStore = result.states.find(s => s.name === 'UserStore');
+    expect(stateStore).toBeDefined();
+    expect(
+      stateStore?.fields.find(f => f.name === 'isAuthenticated')?.modifier
+    ).toBe('get');
+    expect(stateStore?.fields.find(f => f.name === 'setUser')?.modifier).toBe(
+      'action'
+    );
+  });
 });

@@ -1,117 +1,142 @@
 ---
 id: blocks
-title: Entity Declarations
+title: "Level 1: Object declarations"
 sidebar_position: 1
 ---
 
-# Entity Declarations (Objects)
+# Level 1: Object declarations
 
-Draftr specifications are built from top-level blocks known as **Entities** or **Objects**. Every object declaration starts at **Level 1** (0 indentation spaces).
+Level 1 objects are root entities that represent architectural components. You declare Level 1 objects at zero indentation using the following sequence:
 
----
-
-## Entity Taxonomy Matrix
-
-| Object Keyword | Semantic Category | Description | Allowed Children | Outbound Connections |
-| :--- | :--- | :--- | :--- | :--- |
-| `class` | Domain Logic | Concrete service or business model | Properties, Methods, Direct calls | `calls`, `extends`, `implements`, `emits` |
-| `abstract class` | Polymorphism | Abstract base service with partial implementation | Properties, Methods | `extends`, `implements`, `calls` |
-| `interface` | Contract | Structural contract defining required signatures | Methods, Properties | `extends` |
-| `type` | Domain Modeling | Data transfer object (DTO) or struct | Properties / Fields | None |
-| `db` | Persistence | Relational database table or collection | Columns (`pk`, `fk`, `unique`) | `references` (foreign key) |
-| `api` | Gateway | REST API route group | Endpoints (`GET`, `POST`, etc.) | `routes_to` (service handler) |
-| `ui` | Presentation | Frontend screen or component tree | Nested `ui`, `binds` | `binds` (service or state) |
-| `event` | Messaging | Asynchronous event or queue topic | Payload type | `emits` (handler method) |
-| `state` | Client Store | Frontend state slice (Zustand, Redux) | State fields | None |
-
----
-
-## Detailed Object Specifications
-
-### `class`
-Represents a concrete domain service, manager, or business logic model.
-```draftr
-class OrderService extends BaseService implements IOrderProcessor
-  public id: string
-  private encryptionKey: string
-  public checkout(cartId: string, amount: number): OrderConfirmation
-    calls PaymentService.charge
-    calls InventoryService.decrementStock
-    emits OrderCompleted
+```
+[object_type] [name]
 ```
 
-### `abstract class`
-Represents an inheritable base class that provides shared functionality or template methods.
+## Supported object types
+
+Draftr supports 10 root object types:
+
+| Object type | Category | Purpose | Canvas node style | Outbound relations |
+| :--- | :--- | :--- | :--- | :--- |
+| `class` | Domain logic | Concrete service, business logic manager, or model | Blue (`service`) | `call`, `extends`, `implements`, `emit` |
+| `abstract class` | Polymorphism | Abstract base class with template methods | Navy (`service`) | `extends`, `implements`, `call` |
+| `interface` | Contract | Structural contract defining required signatures | Amber (`interface`) | `extends` |
+| `type` | Domain modeling | Data transfer object (DTO) or struct | Gray (`type`) | None |
+| `db` | Persistence | Relational database table or collection | Green (`table`) | `references` (foreign keys) |
+| `api` | Gateway | REST API route group | Purple (`api`) | `call` (handler method) |
+| `ui` | Presentation | User interface component or screen | Rose (`ui`) | `emit`, `render` |
+| `event` | Messaging | Asynchronous event or queue topic | Yellow (`event`) | `emit` (handler method) |
+| `state` | Client store | Reactive frontend state slice | Teal (`state`) | None |
+| `function` | Domain logic | Standalone utility function or procedure | Blue (`service`) | `call`, `emit` |
+
+## Object declarations and examples
+
+### Classes
+
+Use `class` to define a concrete business service or domain entity. Classes support inheritance with `extends` and interface implementation with `implements`:
+
+```draftr
+class OrderService extends BaseService implements IOrderProcessor
+  public orderCounter: number
+  public process(orderId: string): boolean
+    call PaymentGateway.charge(orderId)
+```
+
+### Abstract classes
+
+Use `abstract class` to define an uninstantiable base service that child classes can inherit:
+
 ```draftr
 abstract class BaseService
   protected logger: LoggerInstance
-  public initialize(): void
+  public initialize()
 ```
 
-### `interface`
-Defines an architectural contract. Implementing classes must satisfy all method signatures.
+### Interfaces
+
+Use `interface` to define an architectural contract. Implementing classes must define all methods specified by the interface:
+
 ```draftr
 interface PaymentGateway
-  + authorize(token: string, amount: number): boolean
-  + refund(transactionId: string): RefundReceipt
+  public authorize(token: string, amount: number): boolean
+  public refund(transactionId: string): RefundReceipt
 ```
 
-### `type`
-Defines a data shape, transfer object, or payload.
+### Types
+
+Use `type` to define a data transfer object (DTO) or typed struct:
+
 ```draftr
 type OrderPayload
-  + orderId: string
-  + customerEmail: string
-  + totalAmount: number
+  orderId: string
+  customerEmail: string
+  items: OrderItem[]
+  totalAmount: number
 ```
 
-### `db`
-Defines a relational database table with primary keys, unique constraints, and foreign keys.
+### Database tables
+
+Use `db` to define a relational database table:
+
 ```draftr
 db Users
-  + id: uuid pk
-  + email: string unique
+  id: uuid pk
+  email: string unique
+  created_at: timestamp
 
 db Orders
-  + id: uuid pk
-  + user_id: uuid fk -> Users.id
-  + total_price: number
+  id: uuid pk
+  user_id: uuid fk -> Users.id
+  total_price: number
 ```
 
-### `api`
-Defines HTTP REST gateway routing and endpoint-to-service links.
+### API route groups
+
+Use `api` followed by a base path to define REST gateway routes:
+
 ```draftr
 api /api/v1/orders
-  + POST /create(CreateOrderDto): OrderResponse -> OrderService.checkout
-  + GET /:id(): OrderDetails -> OrderService.getOrder
-  + DELETE /:id(): void -> OrderService.cancelOrder
+  POST /create(CreateOrderDto): OrderResponse
+    call OrderService.checkout(orderData)
+  GET /:id(): OrderDetails
+    call OrderService.getOrder(id)
 ```
 
-### `ui`
-Defines frontend component trees and binds them to backend services or state slices.
+### UI components
+
+Use `ui` to declare user interface screens and component trees:
+
 ```draftr
 ui CheckoutPage
-  binds OrderService
-  binds CartStore
-  ui PaymentCardForm
-    binds PaymentService
+  prop orderId: string
+  render ui.NavigationSidebar
+  render ui.PaymentCardForm
 ```
 
-:::warning Architectural Guardrail
-UI components cannot directly bind or call `db` tables (`binds UsersTable` triggers an architectural linter error). All database access must flow through a `class` service.
-:::
+### Events
 
-### `event`
-Defines an asynchronous message or event topic with an optional handler target.
+Use `event` to declare an asynchronous domain event or pub/sub message topic:
+
 ```draftr
-event OrderPlaced(OrderPayload) -> NotificationService.sendEmail
+event OrderPlaced(OrderPayload)
 ```
 
-### `state`
-Defines a client reactive store slice.
+### State stores
+
+Use `state` to declare a client-side reactive store slice:
+
 ```draftr
-state CartState
-  + items: CartItem[]
-  + subtotal: number
-  + isSubmitting: boolean
+state CartStore
+  items: CartItem[]
+  total: number
+  isSubmitting: boolean
+  action addItem(item: CartItem)
+```
+
+### Standalone functions
+
+Use `function` to define a standalone procedure or utility:
+
+```draftr
+function calculateTax(amount: number, rate: number): number
 ```

@@ -15,23 +15,82 @@ export function lintArchitecture(
 
   const knownClassNames = new Set(project.classes.map(c => c.name));
   const knownTableNames = new Set((project.tables || []).map(t => t.name));
+  const knownEventNames = new Set((project.events || []).map(e => e.name));
+  const knownStateNames = new Set((project.states || []).map(s => s.name));
+  const knownFunctionNames = new Set(
+    (project.functions || []).map(f => f.name)
+  );
+  const knownApiNames = new Set(
+    (project.apiRoutes || []).flatMap(r => [r.path, r.id])
+  );
+  const knownUIComponentNames = new Set(
+    (project.uiComponents || []).map(u => u.name)
+  );
+
+  const allEntityNames = new Set([
+    ...knownClassNames,
+    ...knownTableNames,
+    ...knownEventNames,
+    ...knownStateNames,
+    ...knownFunctionNames,
+    ...knownApiNames,
+    ...knownUIComponentNames,
+  ]);
 
   // 1. Missing Invocation Target Check
+  const checkCalls = (
+    calls: Array<{targetClass: string; verb?: string}> | undefined,
+    sourceName: string,
+    sourceEntityId?: string
+  ) => {
+    if (!calls) return;
+    for (const call of calls) {
+      if (!call.targetClass) continue;
+      const verb = call.verb;
+      let isValid = false;
+
+      if (verb === 'query' || verb === 'mutate') {
+        isValid = knownTableNames.has(call.targetClass);
+      } else if (verb === 'dispatch') {
+        isValid = knownStateNames.has(call.targetClass);
+      } else if (verb === 'emit') {
+        isValid =
+          knownEventNames.has(call.targetClass) ||
+          knownUIComponentNames.has(call.targetClass);
+      } else if (verb === 'render') {
+        isValid =
+          knownUIComponentNames.has(call.targetClass) ||
+          knownUIComponentNames.has(call.targetClass.replace(/^ui\./, ''));
+      } else if (verb === 'call') {
+        isValid =
+          knownClassNames.has(call.targetClass) ||
+          knownFunctionNames.has(call.targetClass) ||
+          knownApiNames.has(call.targetClass);
+      } else {
+        isValid = allEntityNames.has(call.targetClass);
+      }
+
+      if (!isValid) {
+        issues.push({
+          id: `missing-target-${sourceName}-${call.targetClass}`,
+          severity: 'error',
+          title: 'Unresolved Call Target',
+          description: `"${sourceName}" references non-existent target "${call.targetClass}"`,
+          affectedEntityId: sourceEntityId,
+        });
+      }
+    }
+  };
+
   for (const cls of project.classes) {
     for (const meth of cls.methods) {
-      if (meth.calls) {
-        for (const call of meth.calls) {
-          if (!knownClassNames.has(call.targetClass)) {
-            issues.push({
-              id: `missing-target-${cls.name}-${call.targetClass}`,
-              severity: 'error',
-              title: 'Unresolved Call Target',
-              description: `Method "${cls.name}.${meth.name}()" calls non-existent entity "${call.targetClass}"`,
-              affectedEntityId: cls.id,
-            });
-          }
-        }
-      }
+      checkCalls(meth.calls, `${cls.name}.${meth.name}()`, cls.id);
+    }
+  }
+
+  if (project.functions) {
+    for (const fn of project.functions) {
+      checkCalls(fn.calls, `function ${fn.name}()`, fn.id);
     }
   }
 

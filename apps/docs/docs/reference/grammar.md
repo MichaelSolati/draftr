@@ -1,16 +1,14 @@
 ---
 id: grammar
-title: Formal Grammar Reference
+title: Formal grammar reference
 sidebar_position: 1
 ---
 
-# Formal Grammar Reference
+# Formal grammar reference
 
-This page provides the formal EBNF grammar specification for Draftr (`.draftr`).
+This page defines the formal Extended Backus-Naur Form (EBNF) grammar for Draftr (`.draftr`).
 
----
-
-## EBNF Grammar
+## EBNF grammar specification
 
 ```ebnf
 Spec             ::= ( Entity | Comment | BlankLine )* ;
@@ -23,7 +21,8 @@ Entity           ::= ClassDecl
                    | ApiRouteDecl
                    | UiComponentDecl
                    | EventDecl
-                   | StateDecl ;
+                   | StateDecl
+                   | FunctionDecl ;
 
 ClassDecl        ::= "class" Identifier [ "extends" Identifier ] [ "implements" IdentifierList ] Newline MemberList ;
 AbstractClassDecl::= "abstract" "class" Identifier [ "extends" Identifier ] [ "implements" IdentifierList ] Newline MemberList ;
@@ -31,20 +30,21 @@ InterfaceDecl    ::= "interface" Identifier [ "extends" Identifier ] Newline Int
 TypeDecl         ::= "type" Identifier Newline PropertyList ;
 TableDecl        ::= "db" Identifier Newline ColumnList ;
 ApiRouteDecl     ::= "api" Path Newline EndpointList ;
-UiComponentDecl  ::= "ui" Identifier Newline UiBodyList ;
-EventDecl        ::= "event" Identifier [ "(" Type ")" ] [ "->" Target ] Newline ;
-StateDecl        ::= "state" Identifier Newline PropertyList ;
+UiComponentDecl  ::= "ui" Identifier Newline UiMemberList ;
+EventDecl        ::= "event" Identifier [ "(" Type ")" ] Newline ;
+StateDecl        ::= "state" Identifier Newline StateMemberList ;
+FunctionDecl     ::= [ Visibility ] "function" Identifier "(" [ ParamList ] ")" [ ":" Type ] Newline [ InvocationList ] ;
 
-Member           ::= Property | Method | Invocation | Binding ;
-Property         ::= Indent2 [ Modifier ] Identifier ":" Type Newline ;
-Method           ::= Indent2 [ Modifier ] Identifier "(" [ ParamList ] ")" [ ":" Type ] [ "->" Target ] Newline [ InvocationList ] ;
-Invocation       ::= Indent3 ( "calls" | "invokes" | "->" ) Target Newline ;
-Binding          ::= Indent2 ( "bind" | "binds" ) Identifier Newline ;
+Member           ::= [ Visibility ] [ Modifier ] Identifier [ "?" ] [ "(" [ ParamList ] ")" ] [ ":" Type ] Newline [ InvocationList ] ;
 
-Column           ::= Indent2 [ "+" ] Identifier ":" Type [ "pk" ] [ "unique" ] [ "fk" [ "->" Target ] ] Newline ;
-Endpoint         ::= Indent2 [ "+" ] HttpVerb Path [ "(" Type ")" ] [ ":" Type ] [ "->" Target ] Newline ;
+Invocation       ::= Indent4 Verb Target [ "(" [ Payload ] ")" ] Newline ;
+Verb             ::= "call" | "emit" | "dispatch" | "query" | "mutate" | "render" ;
 
-HttpVerb         ::= "GET" | "POST" | "PUT" | "DELETE" | "PATCH" ;
-Modifier         ::= "+" | "-" | "#" | "public" | "private" | "protected" | "readonly" | "override" ;
-Target           ::= Identifier [ "." Identifier [ "()" ] ] ;
+Visibility       ::= "public" | "private" | "protected" | "readonly" ;
+Modifier         ::= "get" | "set" | "static" | "async" | "action" | "prop" | "emit" | "param" | "return" ;
+ColumnConstraint ::= "pk" | "fk" | "unique" | "nullable" | "index" | "default" ;
+
+Type             ::= SimpleType ( "|" SimpleType )* ;
+SimpleType       ::= Identifier [ "?" ] [ "[]" ] ;
+Target           ::= Identifier [ "." Identifier ] ;
 ```

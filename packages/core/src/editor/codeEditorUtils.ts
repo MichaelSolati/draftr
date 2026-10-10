@@ -47,6 +47,7 @@ export const DSL_KEYWORDS = [
   {label: 'class', detail: 'Class or service definition'},
   {label: 'abstract', detail: 'Abstract class definition'},
   {label: 'interface', detail: 'Interface definition'},
+  {label: 'function', detail: 'Standalone function definition'},
   {label: 'extends', detail: 'Inherit from base class'},
   {label: 'implements', detail: 'Implement interface contract'},
   {label: 'override', detail: 'Override base class member'},
@@ -58,8 +59,18 @@ export const DSL_KEYWORDS = [
   {label: 'state', detail: 'State store slice declaration'},
   {label: 'binds', detail: 'Bind service to UI component'},
   {label: 'bind', detail: 'Bind service to UI component'},
+  {label: 'call', detail: 'Invoke class method, API, or function'},
   {label: 'calls', detail: 'Invoke method on service'},
+  {label: 'emit', detail: 'Emit event message or UI event'},
   {label: 'emits', detail: 'Emit event message'},
+  {label: 'dispatch', detail: 'Dispatch state action or mutation'},
+  {label: 'query', detail: 'Query database table'},
+  {label: 'mutate', detail: 'Mutate database table'},
+  {label: 'render', detail: 'Render child UI component'},
+  {label: 'prop', detail: 'UI component prop definition'},
+  {label: 'action', detail: 'State action definition'},
+  {label: 'static', detail: 'Static member modifier'},
+  {label: 'async', detail: 'Async method modifier'},
   {label: 'public', detail: 'Public member visibility'},
   {label: 'private', detail: 'Private member visibility'},
   {label: 'protected', detail: 'Protected member visibility'},
@@ -70,6 +81,8 @@ export const DSL_KEYWORDS = [
   {label: 'fk', detail: 'Foreign key modifier'},
   {label: 'unique', detail: 'Unique column constraint'},
   {label: 'nullable', detail: 'Nullable column constraint'},
+  {label: 'index', detail: 'Database index constraint'},
+  {label: 'default', detail: 'Column default value constraint'},
   {label: 'GET', detail: 'HTTP GET endpoint'},
   {label: 'POST', detail: 'HTTP POST endpoint'},
   {label: 'PUT', detail: 'HTTP PUT endpoint'},
@@ -394,11 +407,14 @@ export function getActiveTokenInfo(
   const prefix = match ? match[1] : '';
 
   const isAfterArrowOrCall =
-    /(?:->[ \t]*|(?:\b(?:calls|invokes|binds?)\b|-)[ \t]+)[A-Za-z0-9_$.]*$/.test(
+    /(?:->[ \t]*|(?:\b(?:calls?|invokes?|binds?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\b|-)[ \t]+)[A-Za-z0-9_$.]*$/.test(
       line
     );
   const isAfterColon = /:[ \t]*[A-Za-z0-9_$.]*$/.test(line);
-  const isSubBullet = /^[ \t]*(-|->|calls|invokes|binds?)[ \t]+/.test(line);
+  const isSubBullet =
+    /^[ \t]*(-|->|calls?|invokes?|binds?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)[ \t]+/.test(
+      line
+    );
   const isLineStart = /^[ \t]*[-+#A-Za-z0-9_$.]*$/.test(line);
 
   return {

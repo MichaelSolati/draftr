@@ -36,15 +36,19 @@ export function exportToMermaidClassDiagram(
 
   // Relations
   for (const conn of project.connections) {
-    if (conn.type === 'invokes' && conn.sourceMember && conn.targetMember) {
-      const sourceName = conn.sourceId.replace(/^(entity-|api-)/, '');
-      const targetName = conn.targetId.replace(/^entity-/, '');
+    if (
+      (conn.type === 'invokes' || conn.type === 'call') &&
+      conn.sourceMember &&
+      conn.targetMember
+    ) {
+      const sourceName = conn.sourceId.replace(/^(entity-|api-|func-)/, '');
+      const targetName = conn.targetId.replace(/^(entity-|func-)/, '');
       lines.push(
         `    ${sourceName} ..> ${targetName} : "${conn.sourceMember}() -> ${conn.targetMember}()"`
       );
     } else if (conn.type === 'binds') {
       const sourceName = conn.sourceId.replace(/^ui-/, 'UI_');
-      const targetName = conn.targetId.replace(/^entity-/, '');
+      const targetName = conn.targetId.replace(/^(entity-|func-)/, '');
       lines.push(`    ${sourceName} ..> ${targetName} : "binds"`);
     } else if (conn.type === 'inherits') {
       const sourceName = conn.sourceId.replace(/^entity-/, '');
@@ -54,6 +58,25 @@ export function exportToMermaidClassDiagram(
       const sourceName = conn.sourceId.replace(/^entity-/, '');
       const targetName = conn.targetId.replace(/^entity-/, '');
       lines.push(`    ${targetName} <|.. ${sourceName} : "implements"`);
+    } else if (conn.type === 'emit' || conn.type === 'emits') {
+      const sourceName = conn.sourceId.replace(/^(entity-|func-|ui-)/, '');
+      const targetName = conn.targetId.replace(
+        /^(entity-|func-|ui-|event-)/,
+        ''
+      );
+      lines.push(`    ${sourceName} ..> ${targetName} : "emit"`);
+    } else if (conn.type === 'dispatch') {
+      const sourceName = conn.sourceId.replace(/^(entity-|func-)/, '');
+      const targetName = conn.targetId.replace(/^(state-)/, '');
+      lines.push(`    ${sourceName} ..> ${targetName} : "dispatch"`);
+    } else if (conn.type === 'query' || conn.type === 'mutate') {
+      const sourceName = conn.sourceId.replace(/^(entity-|func-)/, '');
+      const targetName = conn.targetId.replace(/^(table-)/, '');
+      lines.push(`    ${sourceName} ..> ${targetName} : "${conn.type}"`);
+    } else if (conn.type === 'render') {
+      const sourceName = conn.sourceId.replace(/^(ui-)/, 'UI_');
+      const targetName = conn.targetId.replace(/^(ui-)/, 'UI_');
+      lines.push(`    ${sourceName} ..> ${targetName} : "render"`);
     }
   }
 
@@ -143,10 +166,19 @@ export function exportToMermaidFlowchart(project: ArchitectureProject): string {
       lines.push(`    ${conn.sourceId} -.->|binds| ${conn.targetId}`);
     } else if (conn.type === 'foreignKey') {
       lines.push(`    ${conn.sourceId} ==>|FK| ${conn.targetId}`);
-    } else if (conn.type === 'emits') {
-      lines.push(`    ${conn.sourceId} -.->|emits| ${conn.targetId}`);
-    } else if (conn.type === 'invokes') {
-      const label = `${conn.sourceMember || ''} -> ${conn.targetMember || ''}`;
+    } else if (conn.type === 'emits' || conn.type === 'emit') {
+      lines.push(`    ${conn.sourceId} -.->|emit| ${conn.targetId}`);
+    } else if (conn.type === 'dispatch') {
+      lines.push(`    ${conn.sourceId} -.->|dispatch| ${conn.targetId}`);
+    } else if (conn.type === 'query' || conn.type === 'mutate') {
+      lines.push(`    ${conn.sourceId} -.->|${conn.type}| ${conn.targetId}`);
+    } else if (conn.type === 'render') {
+      lines.push(`    ${conn.sourceId} -->|render| ${conn.targetId}`);
+    } else if (conn.type === 'invokes' || conn.type === 'call') {
+      const label =
+        conn.sourceMember && conn.targetMember
+          ? `${conn.sourceMember} -> ${conn.targetMember}`
+          : conn.sourceMember || conn.targetMember || 'call';
       lines.push(`    ${conn.sourceId} -->|"${label}"| ${conn.targetId}`);
     }
   }
