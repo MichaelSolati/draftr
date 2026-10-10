@@ -74,7 +74,7 @@ const config: Config = {
             },
             {
               label: 'Syntax Guide',
-              to: '/syntax/blocks',
+              to: '/syntax/overview',
             },
           ],
         },
