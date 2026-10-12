@@ -13,3 +13,5 @@ graphify-out
 **/.docusaurus
 build
 **/build
+packages/grammar/src/*.js
+packages/grammar/src/*.d.ts

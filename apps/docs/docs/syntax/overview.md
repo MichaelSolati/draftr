@@ -12,18 +12,36 @@ Draftr uses a strict, indentation-based 3-level hierarchy to map architectural c
 
 1. **Level 1 (0 spaces): Object declarations**
    Declare the root architectural component (such as a class, database table, or UI component).
-   *Syntax:* `[object_type] [name]`
-   *Example:* `class OrderService`
+   *Syntax:*
+```draftr-syntax
+[object_type] [target]
+```
+   *Example:*
+```draftr
+class OrderService
+```
 
 2. **Level 2 (2 spaces): Member definitions**
    Define the properties, methods, columns, or routes belonging to the object.
-   *Syntax:* `[visibility] [modifier] [name]: [type]`
-   *Example:* `public checkout(cartId: string): boolean`
+   *Syntax:*
+```draftr-syntax
+[visibility] [modifier] [name]: [type]
+```
+   *Example:*
+```draftr
+public checkout(cartId: string): boolean
+```
 
 3. **Level 3 (4 spaces): Invocations and relations**
    Define interactions, such as calling other services, querying databases, emitting events, or composing UI.
-   *Syntax:* `[verb] [Target].[member]([payload])`
-   *Example:* `call PaymentGateway.charge(cartId)`
+   *Syntax:*
+```draftr-syntax
+[verb] [target].[name]([payload])
+```
+   *Example:*
+```draftr
+call PaymentGateway.charge(cartId)
+```
 
 ## Putting it together
 

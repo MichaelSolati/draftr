@@ -1,0 +1,194 @@
+@top Program { statement* }
+
+@skip { space | Comment | blankLine }
+
+statement {
+  ClassDeclaration |
+  UiDeclaration |
+  TableDeclaration |
+  ApiRouteDeclaration |
+  EventDeclaration |
+  FunctionDeclaration |
+  StateDeclaration
+}
+
+ClassKeyword {
+  kw<"class"> | kw<"interface"> | kw<"type"> | (kw<"abstract"> kw<"class">)
+}
+
+ClassDeclaration {
+  ClassKeyword Identifier (kw<"extends"> Identifier)? (kw<"implements"> commaSep<Identifier>)?
+  ((newline indent classMember* (dedent | eof)) | (newline | eof))
+}
+
+UiDeclaration {
+  kw<"ui"> Identifier
+  ((newline indent uiMember* (dedent | eof)) | (newline | eof))
+}
+
+TableDeclaration {
+  kw<"db"> Identifier
+  ((newline indent dbMember* (dedent | eof)) | (newline | eof))
+}
+
+ApiRouteDeclaration {
+  kw<"api"> (RoutePath | Identifier)
+  ((newline indent apiMember* (dedent | eof)) | (newline | eof))
+}
+
+EventDeclaration {
+  kw<"event"> Identifier ParamList? (ActionVerb InvocationTarget)?
+  ((newline indent eventMember* (dedent | eof)) | (newline | eof))
+}
+
+FunctionDeclaration {
+  Visibility? kw<"function"> Identifier ParamList (":" Type)?
+  ((newline indent ActionDeclaration* (dedent | eof)) | (newline | eof))
+}
+
+StateDeclaration {
+  kw<"state"> Identifier
+  ((newline indent stateMember* (dedent | eof)) | (newline | eof))
+}
+
+classMember {
+  MethodDeclaration |
+  PropertyDeclaration |
+  ActionDeclaration |
+  BindsDeclaration
+}
+
+uiMember {
+  PropDeclaration |
+  BindsDeclaration |
+  UiDeclaration |
+  ActionDeclaration
+}
+
+dbMember {
+  ColumnDeclaration
+}
+
+apiMember {
+  ApiEndpointDeclaration
+}
+
+eventMember {
+  ActionDeclaration
+}
+
+stateMember {
+  StateActionDeclaration |
+  PropertyDeclaration
+}
+
+MethodDeclaration {
+  Visibility? Modifier* Identifier ParamList (":" Type)? (ActionVerb InvocationTarget ParamList?)?
+  ((newline indent ActionDeclaration* (dedent | eof)) | (newline | eof))
+}
+
+StateActionDeclaration {
+  kw<"action"> Identifier ParamList? (":" Type)?
+  newline
+}
+
+PropertyDeclaration {
+  Visibility? Modifier* Identifier "?"? (":" Type)?
+  newline
+}
+
+ColumnModifier {
+  kw<"pk"> | kw<"fk"> | kw<"unique"> | kw<"nullable"> | kw<"index"> | kw<"default">
+}
+
+ColumnDeclaration {
+  ColumnModifier* Identifier "?"? ":" Type (kw<"fk"> "->" InvocationTarget)?
+  newline
+}
+
+PropDeclaration {
+  kw<"prop"> Identifier "?"? (":" Type)?
+  newline
+}
+
+BindsDeclaration {
+  (kw<"binds"> | kw<"bind">) Identifier
+  newline
+}
+
+ApiEndpointDeclaration {
+  Visibility? HttpMethod RoutePath ParamList? (":" Type)? (ActionVerb InvocationTarget)?
+  ((newline indent ActionDeclaration* (dedent | eof)) | (newline | eof))
+}
+
+ActionDeclaration {
+  ActionVerb InvocationTarget ParamList? (":" Type)?
+  newline
+}
+
+ParamList {
+  "(" commaSep<Param>? ")"
+}
+
+Param {
+  Identifier "?"? (":" Type)?
+}
+
+ColumnConstraint {
+  @specialize[@name=Constraint]<Identifier, "PK" | "UQ">
+}
+
+Modifier { kw<"static"> | kw<"async"> | kw<"get"> | kw<"set"> | kw<"abstract"> }
+
+Visibility {
+  "+" | "-" | "#" |
+  kw<"public"> | kw<"private"> | kw<"protected"> | kw<"readonly"> | kw<"override">
+}
+
+ActionVerb {
+  kw<"calls"> | kw<"call"> | kw<"invokes"> | kw<"emit"> | kw<"dispatch"> | kw<"query"> | kw<"mutate"> | kw<"render"> | "->"
+}
+
+HttpMethod {
+  @specialize[@name=HttpMethod]<Identifier, "GET" | "POST" | "PUT" | "PATCH" | "DELETE">
+}
+
+TargetIdentifier {
+  Identifier |
+  kw<"ui"> | kw<"db"> | kw<"api"> | kw<"state"> | kw<"event"> |
+  kw<"get"> | kw<"set"> | kw<"default">
+}
+
+InvocationTarget {
+  TargetIdentifier ("." TargetIdentifier)?
+}
+
+TypeComponent { (Identifier | String) ("." Identifier)* ("[" "]")* ("<" Type ("," Type)* ">")? }
+Type { TypeComponent ("|" TypeComponent)* }
+
+commaSep<expr> { expr ("," expr)* }
+
+kw<term> { @specialize[@name={term}]<Identifier, term> }
+
+@skip {} {
+  blankLine {
+    blankLineStart space? Comment? (newline | eof)
+  }
+}
+
+@context trackIndent from "./tokens.js"
+
+@external tokens indentation from "./tokens.js" { indent, dedent }
+
+@external tokens newlines from "./tokens.js" { newline, blankLineStart, eof }
+
+@tokens {
+  Identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
+  RoutePath { "/" $[a-zA-Z0-9_/{}-]* }
+  Comment { "//" ![\n\r]* }
+  space { $[ \t]+ }
+  String { '"' !["]* '"' | "'" ![']* "'" }
+  "|"
+  "(" ")" "[" "]" ":" "," "." "?" "+" "-" "#" "->"
+  @precedence { Comment, RoutePath, Identifier, "-" }
+}

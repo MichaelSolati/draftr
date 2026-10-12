@@ -3,7 +3,7 @@ import {
   type ClassSpec,
   type Visibility,
 } from '@draftr/core';
-import {extractReferencedItems} from '@draftr/core';
+import {extractReferencedItems} from '@draftr/language-service';
 import {Handle, type NodeProps, Position} from '@xyflow/react';
 import {Box, Check, Edit3, Lock, Shield, Unlock, X} from 'lucide-react';
 import React, {memo, useState} from 'react';

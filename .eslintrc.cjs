@@ -7,6 +7,9 @@ module.exports = {
     project: [
       './tsconfig.json',
       './packages/core/tsconfig.json',
+      './packages/grammar/tsconfig.json',
+      './packages/language-service/tsconfig.json',
+      './packages/theme/tsconfig.json',
       './apps/web/tsconfig.json',
       './apps/vscode/tsconfig.json',
       './apps/docs/tsconfig.json',

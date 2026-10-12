@@ -1,0 +1,31 @@
+// Welcome to Draftr! 
+// This is your architectural canvas. 
+// Define your system using indentation (0, 2, and 4 spaces).
+
+ui WebStorefront
+  call CheckoutAPI.checkout()
+
+api CheckoutAPI
+  POST /api/checkout(cartId: string): boolean
+    call OrderService.process()
+
+class OrderService
+  public process(cartId: string): boolean
+    query OrdersDB.findById(cartId)
+    call PaymentGateway.charge()
+    mutate OrdersDB.updateStatus()
+    emit OrderPlacedEvent
+
+class PaymentGateway
+  pop1: string
+  private apiKey: string
+  public charge(amount: number): boolean
+    call OrderService.process()
+
+db OrdersDB
+  pk id: uuid
+  fk customerId: uuid
+  total: number
+  status: string
+
+event OrderPlacedEvent(orderId: uuid, total: number)

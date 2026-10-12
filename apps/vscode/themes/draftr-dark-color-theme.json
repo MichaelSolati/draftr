@@ -1,0 +1,17 @@
+{
+  "name": "Draftr Dark",
+  "type": "dark",
+  "semanticHighlighting": true,
+  "semanticTokenColors": {
+    "keyword": "#c084fc",
+    "modifier": "#34d399",
+    "variable": "#f1f5f9",
+    "function": "#fde047",
+    "type": "#38bdf8",
+    "class": "#f59e0b",
+    "string": "#fb7185",
+    "namespace": "#2dd4bf",
+    "enum": "#f59e0b",
+    "interface": "#f59e0b"
+  }
+}

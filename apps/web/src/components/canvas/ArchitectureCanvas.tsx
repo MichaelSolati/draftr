@@ -1,7 +1,7 @@
 import '@xyflow/react/dist/style.css';
 
 import {type ArchitectureProject, type DomainType} from '@draftr/core';
-import {extractEntityRawSnippet} from '@draftr/core';
+import {extractEntityRawSnippet} from '@draftr/language-service';
 import {
   Background,
   type Connection,

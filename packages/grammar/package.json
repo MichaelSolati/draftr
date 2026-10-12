@@ -1,0 +1,21 @@
+{
+  "name": "@draftr/grammar",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "lezer-generator src/draftr.grammar -o src/parser.js && tsc",
+    "dev": "lezer-generator src/draftr.grammar -o src/parser.js && tsc -w",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@lezer/highlight": "^1.2.1",
+    "@lezer/lr": "^1.4.2",
+    "@lezer/python": "^1.1.19"
+  },
+  "devDependencies": {
+    "@lezer/generator": "^1.7.2",
+    "typescript": "^5.6.3"
+  }
+}

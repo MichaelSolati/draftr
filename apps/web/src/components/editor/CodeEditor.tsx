@@ -3,11 +3,8 @@ import {indentWithTab} from '@codemirror/commands';
 import {indentUnit, syntaxHighlighting} from '@codemirror/language';
 import {EditorState} from '@codemirror/state';
 import {keymap, lineNumbers} from '@codemirror/view';
-import {
-  type ArchitectureProject,
-  extractReferencedItems,
-  type ParserDiagnostic,
-} from '@draftr/core';
+import {type ArchitectureProject, type ParserDiagnostic} from '@draftr/core';
+import {extractReferencedItems} from '@draftr/language-service';
 import CodeMirror from '@uiw/react-codemirror';
 import React, {useMemo} from 'react';
 
@@ -15,8 +12,8 @@ import {useTheme} from '../theme/ThemeProvider';
 import {
   createDraftrCompletions,
   draftrIndentService,
+  draftrLanguage,
   draftrShortcuts,
-  draftrStreamLanguage,
   getDraftrEditorTheme,
   getDraftrHighlightStyle,
 } from './draftrCodeMirror';
@@ -67,7 +64,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // Extensions configuration for CodeMirror 6
   const extensions = useMemo(() => {
     const list = [
-      draftrStreamLanguage,
+      draftrLanguage,
       syntaxHighlighting(getDraftrHighlightStyle(activeTheme)),
       draftrIndentService,
       indentUnit.of('  '),

@@ -1,4 +1,5 @@
-import {type ArchitectureProject} from '../types/spec';
+import {type ArchitectureProject} from '@draftr/core';
+import {parser} from '@draftr/grammar';
 
 export interface AutocompleteItem {
   label: string;
@@ -388,8 +389,8 @@ export function toggleLineComment(
  * Extract active word prefix and context before cursor
  */
 export function getActiveTokenInfo(
-  value: string,
-  cursor: number
+  fullText: string,
+  cursorOffset: number
 ): {
   prefix: string;
   line: string;
@@ -399,18 +400,95 @@ export function getActiveTokenInfo(
   isSubBullet: boolean;
   isLineStart: boolean;
 } {
-  const lineStart = value.lastIndexOf('\n', cursor - 1) + 1;
-  const line = value.slice(lineStart, cursor);
-  const col = cursor - lineStart;
+  const lineStart = fullText.lastIndexOf('\n', cursorOffset - 1) + 1;
+  const line = fullText.slice(lineStart, cursorOffset);
+  const col = cursorOffset - lineStart;
 
+  const tree = parser.parse(fullText);
+  const node = tree.resolveInner(cursorOffset, -1);
+
+  let isAfterArrowOrCall = false;
+  let isAfterColon = false;
+
+  let curr: any = node;
+  while (curr) {
+    if (
+      curr.name === 'ActionDeclaration' ||
+      curr.name === 'ActionVerb' ||
+      curr.name === 'InvocationTarget' ||
+      curr.name === 'EmitDeclaration' ||
+      curr.name === 'BindsDeclaration' ||
+      curr.name === 'RenderDeclaration'
+    ) {
+      isAfterArrowOrCall = true;
+    }
+    if (
+      curr.name === 'Type' ||
+      curr.name === ':' ||
+      (curr.prevSibling && curr.prevSibling.name === ':')
+    ) {
+      isAfterColon = true;
+    }
+    curr = curr.parent;
+  }
+
+  if (!isAfterArrowOrCall) {
+    let c: any = node;
+    while (c && !isAfterArrowOrCall) {
+      let prev = c.prevSibling;
+      while (prev) {
+        if (
+          prev.name === 'ActionVerb' ||
+          prev.name === 'EmitDeclaration' ||
+          prev.name === 'BindsDeclaration' ||
+          prev.name === 'RenderDeclaration'
+        ) {
+          isAfterArrowOrCall = true;
+          break;
+        }
+        if (prev.type.isError) {
+          const text = fullText.slice(prev.from, prev.to).trim();
+          if (
+            /^(->|calls?|invokes?|binds?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?|-)$/.test(
+              text
+            )
+          ) {
+            isAfterArrowOrCall = true;
+            break;
+          }
+        }
+        prev = prev.prevSibling;
+      }
+      c = c.parent;
+    }
+  }
+
+  if (!isAfterColon) {
+    let c: any = node;
+    while (c && !isAfterColon) {
+      let prev = c.prevSibling;
+      while (prev) {
+        if (prev.name === ':') {
+          isAfterColon = true;
+          break;
+        }
+        if (
+          prev.type.isError &&
+          fullText.slice(prev.from, prev.to).includes(':')
+        ) {
+          isAfterColon = true;
+          break;
+        }
+        prev = prev.prevSibling;
+      }
+      c = c.parent;
+    }
+  }
+
+  // Derive prefix from the line text since AST might split foo.bar into [Identifier, '.', Identifier]
   const match = line.match(/([-+#A-Za-z0-9_$.]+)$/);
   const prefix = match ? match[1] : '';
 
-  const isAfterArrowOrCall =
-    /(?:->[ \t]*|(?:\b(?:calls?|invokes?|binds?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\b|-)[ \t]+)[A-Za-z0-9_$.]*$/.test(
-      line
-    );
-  const isAfterColon = /:[ \t]*[A-Za-z0-9_$.]*$/.test(line);
   const isSubBullet =
     /^[ \t]*(-|->|calls?|invokes?|binds?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)[ \t]+/.test(
       line
@@ -673,11 +751,11 @@ export function getAutocompleteSuggestions(
  * Convenience helper to compute completions directly from current line and cursor offset.
  */
 export function suggestCompletions(
-  currentLine: string,
+  fullText: string,
   cursorOffset: number,
   project?: ArchitectureProject
 ): AutocompleteItem[] {
-  const tokenInfo = getActiveTokenInfo(currentLine, cursorOffset);
+  const tokenInfo = getActiveTokenInfo(fullText, cursorOffset);
   return getAutocompleteSuggestions(tokenInfo, project);
 }
 
@@ -688,122 +766,107 @@ export function extractReferencedItems(
   snippet: string,
   project?: ArchitectureProject
 ): ReferencedItem[] {
-  const lines = snippet.split('\n');
+  const tree = parser.parse(snippet);
   const itemsMap = new Map<string, ReferencedItem>();
 
   const knownClassNames = new Set(project?.classes.map(c => c.name) || []);
   const knownTableNames = new Set(project?.tables?.map(t => t.name) || []);
   const knownEventNames = new Set(project?.events?.map(e => e.name) || []);
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // 1. Invocations: -> Target.method, calls Target.method, - Target.method
-    const invMatch = trimmed.match(
-      /(?:->|calls|-)\s*([A-Za-z0-9_$]+)(?:\.([A-Za-z0-9_$]+))?/
-    );
-    if (invMatch) {
-      const targetName = invMatch[1];
-      const member = invMatch[2];
+  tree.cursor().iterate(node => {
+    if (node.name === 'InvocationTarget') {
+      const text = snippet.slice(node.from, node.to);
+      const parts = text.split('.');
+      const targetName = parts[0];
+      const member = parts[1];
       const kind = knownTableNames.has(targetName) ? 'table' : 'class';
       const key = `${targetName}${member ? '.' + member : ''}`;
       if (!itemsMap.has(key)) {
-        itemsMap.set(key, {
-          id: `ref-${key}`,
-          name: targetName,
-          member,
-          kind,
-        });
+        itemsMap.set(key, {id: `ref-${key}`, name: targetName, member, kind});
       }
     }
 
-    // 2. Bound services: binds ServiceName
-    const bindsMatch = trimmed.match(/^binds?\s+([A-Za-z0-9_$,\s]+)/);
-    if (bindsMatch) {
-      const services = bindsMatch[1].split(/[\s,]+/).filter(Boolean);
-      services.forEach(s => {
-        if (!itemsMap.has(s)) {
-          itemsMap.set(s, {
-            id: `ref-${s}`,
-            name: s,
-            kind: 'class',
-          });
+    if (node.name === 'BindsDeclaration') {
+      let n = node.node.firstChild;
+      while (n) {
+        if (n.name === 'Identifier') {
+          const s = snippet.slice(n.from, n.to);
+          if (!itemsMap.has(s)) {
+            itemsMap.set(s, {id: `ref-${s}`, name: s, kind: 'class'});
+          }
         }
-      });
-    }
-
-    // 3. Return types: + start(): Pi.help or + method(): Target
-    const retMatch = trimmed.match(
-      /:\s*([A-Za-z0-9_$]+)(?:\.([A-Za-z0-9_$]+))?/
-    );
-    if (retMatch) {
-      const typeName = retMatch[1];
-      const member = retMatch[2];
-      if (
-        knownClassNames.has(typeName) ||
-        knownTableNames.has(typeName) ||
-        knownEventNames.has(typeName)
-      ) {
-        const kind = knownTableNames.has(typeName)
-          ? 'table'
-          : knownEventNames.has(typeName)
-            ? 'event'
-            : 'class';
-        const key = `${typeName}${member ? '.' + member : ''}`;
-        if (!itemsMap.has(key)) {
-          itemsMap.set(key, {
-            id: `ref-${key}`,
-            name: typeName,
-            member,
-            kind,
-          });
-        }
+        n = n.nextSibling;
       }
     }
 
-    // 4. Emitted events: emits EventName
-    const emitsMatch = trimmed.match(/^emits\s+([A-Za-z0-9_$]+)/);
-    if (emitsMatch) {
-      const eventName = emitsMatch[1];
-      if (!itemsMap.has(eventName)) {
-        itemsMap.set(eventName, {
-          id: `ref-${eventName}`,
-          name: eventName,
-          kind: 'event',
-        });
-      }
-    }
-
-    // 5. Polymorphism targets: extends SuperClass, implements InterfaceA, InterfaceB
-    const polyMatch = trimmed.match(
-      /^(?:abstract\s+class|class|interface)\s+[A-Za-z0-9_$]+(?:\s+extends\s+([A-Za-z0-9_$]+))?(?:\s+implements\s+([A-Za-z0-9_$,\s]+))?/i
-    );
-    if (polyMatch) {
-      const superClass = polyMatch[1];
-      const rawIfaces = polyMatch[2];
-      if (superClass && !itemsMap.has(superClass)) {
-        itemsMap.set(superClass, {
-          id: `ref-${superClass}`,
-          name: superClass,
-          kind: 'class',
-        });
-      }
-      if (rawIfaces) {
-        rawIfaces
-          .split(/[\s,]+/)
-          .filter(Boolean)
-          .forEach(iface => {
-            if (!itemsMap.has(iface)) {
-              itemsMap.set(iface, {
-                id: `ref-${iface}`,
-                name: iface,
-                kind: 'class',
+    if (node.name === 'Type') {
+      const cursor = node.node.cursor();
+      cursor.iterate(n => {
+        if (n.name === 'Identifier') {
+          const typeName = snippet.slice(n.from, n.to);
+          if (
+            knownClassNames.has(typeName) ||
+            knownTableNames.has(typeName) ||
+            knownEventNames.has(typeName)
+          ) {
+            const kind = knownTableNames.has(typeName)
+              ? 'table'
+              : knownEventNames.has(typeName)
+                ? 'event'
+                : 'class';
+            if (!itemsMap.has(typeName)) {
+              itemsMap.set(typeName, {
+                id: `ref-${typeName}`,
+                name: typeName,
+                kind,
               });
             }
-          });
+          }
+        }
+      });
+      return false;
+    }
+
+    if (node.name === 'EmitDeclaration') {
+      let n = node.node.firstChild;
+      while (n) {
+        if (n.name === 'Identifier') {
+          const eventName = snippet.slice(n.from, n.to);
+          if (!itemsMap.has(eventName)) {
+            itemsMap.set(eventName, {
+              id: `ref-${eventName}`,
+              name: eventName,
+              kind: 'event',
+            });
+          }
+        }
+        n = n.nextSibling;
       }
     }
-  }
+
+    if (node.name === 'ClassDeclaration') {
+      let n = node.node.firstChild;
+      let afterExtends = false;
+      let afterImplements = false;
+      while (n) {
+        if (n.name === 'extends') {
+          afterExtends = true;
+          afterImplements = false;
+        } else if (n.name === 'implements') {
+          afterImplements = true;
+          afterExtends = false;
+        } else if (n.name === 'Identifier') {
+          if (afterExtends || afterImplements) {
+            const name = snippet.slice(n.from, n.to);
+            if (!itemsMap.has(name)) {
+              itemsMap.set(name, {id: `ref-${name}`, name, kind: 'class'});
+            }
+          }
+        }
+        n = n.nextSibling;
+      }
+    }
+  });
 
   return Array.from(itemsMap.values());
 }
@@ -815,45 +878,217 @@ export function extractEntityRawSnippet(
   fullText: string,
   entityName: string
 ): string | null {
-  const lines = fullText.split('\n');
-  let startIdx = -1;
-  let endIdx = -1;
-  let baseIndent = 0;
+  const tree = parser.parse(fullText);
+  let snippet: string | null = null;
+  tree.cursor().iterate(node => {
+    if (
+      node.name === 'ClassDeclaration' ||
+      node.name === 'UiDeclaration' ||
+      node.name === 'TableDeclaration' ||
+      node.name === 'ApiRouteDeclaration' ||
+      node.name === 'EventDeclaration' ||
+      node.name === 'StateDeclaration'
+    ) {
+      let n = node.node.firstChild;
+      while (n) {
+        if (n.name === 'Identifier') {
+          const name = fullText.slice(n.from, n.to);
+          if (name === entityName) {
+            snippet = fullText.slice(node.from, node.to);
+            return false;
+          }
+          break;
+        }
+        n = n.nextSibling;
+      }
+    }
+  });
+  return snippet;
+}
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-    const indent = line.search(/\S/);
+export interface SemanticToken {
+  line: number;
+  startChar: number;
+  length: number;
+  tokenType: number;
+  tokenModifiers?: number;
+}
 
-    const declMatch = trimmed.match(
-      /^(?:abstract\s+class|class|type|interface|ui|db|api|event|state)\s+([A-Za-z0-9_$/]+)/i
-    );
-    if (declMatch && declMatch[1] === entityName) {
-      startIdx = i;
-      baseIndent = indent;
+export const SEMANTIC_TOKEN_TYPES = [
+  'class', // 0: object_type
+  'keyword', // 1: verb
+  'modifier', // 2: modifier
+  'namespace', // 3: target
+  'type', // 4: type
+  'variable', // 5: name
+  'function', // 6: name_fn
+  'string', // 7: string
+  'number', // 8: number
+];
+
+export function getSemanticTokens(text: string): SemanticToken[] {
+  const tree = parser.parse(text);
+  const tokens: SemanticToken[] = [];
+
+  const typeMap: Record<string, number> = {
+    class: 0,
+    interface: 0,
+    type: 0,
+    ui: 0,
+    db: 0,
+    api: 0,
+    event: 0,
+    state: 0,
+    function: 0,
+    extends: 1,
+    implements: 1,
+    ActionVerb: 1,
+    calls: 1,
+    call: 1,
+    invokes: 1,
+    emit: 1,
+    dispatch: 1,
+    query: 1,
+    mutate: 1,
+    render: 1,
+    action: 1,
+    binds: 1,
+    bind: 1,
+    '->': 1,
+    Visibility: 2,
+    HttpMethod: 2,
+    ColumnModifier: 2,
+    Modifier: 2,
+    public: 2,
+    private: 2,
+    protected: 2,
+    readonly: 2,
+    override: 2,
+    abstract: 2,
+    static: 2,
+    async: 2,
+    get: 2,
+    set: 2,
+    fk: 2,
+    pk: 2,
+    unique: 2,
+    nullable: 2,
+    index: 2,
+    default: 2,
+    '+': 2,
+    '-': 2,
+    '#': 2,
+    GET: 2,
+    POST: 2,
+    PUT: 2,
+    DELETE: 2,
+    PATCH: 2,
+    InvocationTarget: 3,
+    Type: 4,
+    RoutePath: 7,
+    String: 7,
+    Number: 8,
+  };
+
+  tree.cursor().iterate(node => {
+    let tType = typeMap[node.name];
+    if (tType === undefined) {
+      if (node.name === 'Identifier') {
+        const parent = node.node.parent;
+        if (parent) {
+          if (
+            [
+              'ClassDeclaration',
+              'UiDeclaration',
+              'TableDeclaration',
+              'ApiRouteDeclaration',
+              'EventDeclaration',
+              'StateDeclaration',
+            ].includes(parent.name)
+          ) {
+            let firstId = parent.firstChild;
+            while (firstId && firstId.name !== 'Identifier')
+              firstId = firstId.nextSibling;
+            if (firstId && firstId.from === node.from) tType = 0;
+          } else if (
+            [
+              'MethodDeclaration',
+              'FunctionDeclaration',
+              'StateActionDeclaration',
+            ].includes(parent.name)
+          ) {
+            let firstId = parent.firstChild;
+            while (firstId && firstId.name !== 'Identifier')
+              firstId = firstId.nextSibling;
+            if (firstId && firstId.from === node.from) tType = 6;
+          } else if (
+            [
+              'PropertyDeclaration',
+              'ColumnDeclaration',
+              'PropDeclaration',
+            ].includes(parent.name)
+          ) {
+            tType = 5;
+          } else if (parent.name === 'InvocationTarget') {
+            tType = 3;
+          } else {
+            let curr: any = parent;
+            while (curr) {
+              if (curr.name === 'Type') {
+                tType = 4;
+                break;
+              }
+              curr = curr.parent;
+            }
+          }
+        }
+        if (tType === undefined) tType = 5;
+      }
+    }
+
+    if (tType !== undefined) {
+      const startIdx = node.from;
+      const endIdx = node.to;
+
+      const beforeText = text.slice(0, startIdx);
+      const lines = beforeText.split('\n');
+      const line = lines.length - 1;
+      const startChar = lines[lines.length - 1].length;
+      const length = endIdx - startIdx;
+
+      tokens.push({
+        line,
+        startChar,
+        length,
+        tokenType: tType,
+        tokenModifiers: 0,
+        _startIdx: startIdx,
+      } as any);
+    }
+  });
+
+  // VSCode SemanticTokensBuilder requires tokens to be strictly ordered by line and startChar.
+  // And it does not support overlapping tokens.
+  tokens.sort((a, b) => {
+    if (a.line === b.line) return a.startChar - b.startChar;
+    return a.line - b.line;
+  });
+
+  const filteredTokens: SemanticToken[] = [];
+  let lastLine = -1;
+  let lastChar = -1;
+  let lastLen = 0;
+
+  for (const t of tokens) {
+    // skip if overlaps with the previous token
+    if (t.line === lastLine && t.startChar < lastChar + lastLen) {
       continue;
     }
-
-    if (startIdx !== -1 && endIdx === -1) {
-      if (trimmed === '') {
-        continue;
-      }
-      if (indent <= baseIndent) {
-        endIdx = i;
-        break;
-      }
-    }
+    filteredTokens.push(t);
+    lastLine = t.line;
+    lastChar = t.startChar;
+    lastLen = t.length;
   }
 
-  if (startIdx !== -1) {
-    if (endIdx === -1) endIdx = lines.length;
-    // Trim empty lines at end of entity snippet
-    let last = endIdx;
-    while (last > startIdx && lines[last - 1].trim() === '') {
-      last--;
-    }
-    return lines.slice(startIdx, last).join('\n');
-  }
-
-  return null;
+  return filteredTokens;
 }

@@ -62,9 +62,7 @@ describe('useProjectStore', () => {
     store.connectWire('ServiceA', 'doWork', 'ServiceB', 'execute');
 
     const updated = useProjectStore.getState();
-    expect(updated.project.rawOutlineText).toContain(
-      'calls ServiceB.execute()'
-    );
+    expect(updated.project.rawOutlineText).toContain('call ServiceB.execute()');
   });
 
   it('connects node-level wire binding from UI to Class', () => {
@@ -73,7 +71,7 @@ describe('useProjectStore', () => {
     store.connectWire('ViewA', null, 'ServiceA', null);
 
     const updated = useProjectStore.getState();
-    expect(updated.project.rawOutlineText).toContain('binds ServiceA');
+    expect(updated.project.rawOutlineText).toContain('call ServiceA');
   });
 
   it('connects node-level wire call between classes', () => {
@@ -82,7 +80,7 @@ describe('useProjectStore', () => {
     store.connectWire('ServiceA', null, 'ServiceB', null);
 
     const updated = useProjectStore.getState();
-    expect(updated.project.rawOutlineText).toContain('calls ServiceB');
+    expect(updated.project.rawOutlineText).toContain('call ServiceB');
   });
 
   it('imports code with append and replace modes', () => {

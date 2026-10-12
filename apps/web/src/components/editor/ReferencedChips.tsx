@@ -1,4 +1,4 @@
-import {type ReferencedItem} from '@draftr/core';
+import {type ReferencedItem} from '@draftr/language-service';
 import {
   ArrowUpRight,
   Box,

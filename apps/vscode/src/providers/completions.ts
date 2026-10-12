@@ -1,4 +1,7 @@
-import {type AutocompleteItem, suggestCompletions} from '@draftr/core';
+import {
+  type AutocompleteItem,
+  suggestCompletions,
+} from '@draftr/language-service';
 import * as vscode from 'vscode';
 
 import {createProjectFromText} from '../utils/project';
@@ -27,7 +30,14 @@ export class DraftrCompletionItemProvider
       document.getText(),
       document.fileName
     );
-    const rawSuggestions = suggestCompletions(line, cursorOffset, project);
+    const text = document.getText();
+    const offset =
+      typeof document.offsetAt === 'function'
+        ? document.offsetAt(position)
+        : text.split('\n').slice(0, position.line).join('\n').length +
+          (position.line > 0 ? 1 : 0) +
+          position.character;
+    const rawSuggestions = suggestCompletions(text, offset, project);
 
     return rawSuggestions.map((s: AutocompleteItem) => {
       const item = new vscode.CompletionItem(s.label);

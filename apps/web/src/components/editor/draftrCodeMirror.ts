@@ -2,178 +2,25 @@ import {
   type CompletionContext,
   type CompletionResult,
 } from '@codemirror/autocomplete';
-import {
-  HighlightStyle,
-  indentService,
-  StreamLanguage,
-  StringStream,
-} from '@codemirror/language';
+import {indentService} from '@codemirror/language';
 import {type EditorState} from '@codemirror/state';
 import {EditorView} from '@codemirror/view';
 import {type ArchitectureProject} from '@draftr/core';
-import {tags as t} from '@lezer/highlight';
+import {
+  draftrEditorTheme,
+  draftrHighlightStyle,
+  draftrLanguage,
+  getDraftrEditorTheme,
+  getDraftrHighlightStyle,
+} from '@draftr/theme';
 
-/**
- * StreamLanguage definition for draftr DSL
- */
-export const draftrStreamParser = {
-  tokenTable: {
-    keyword: t.keyword,
-    action: t.controlKeyword,
-    modifier: t.modifier,
-    type: t.typeName,
-    primitive: t.standard(t.typeName),
-    function: t.function(t.variableName),
-    property: t.propertyName,
-    comment: t.lineComment,
-    string: t.string,
-  },
-  token(stream: StringStream): string | null {
-    if (stream.eatSpace()) return null;
-
-    // 1. Comments
-    if (stream.match('//')) {
-      stream.skipToEnd();
-      return 'comment';
-    }
-
-    // 2. Control arrows
-    if (stream.match('->')) {
-      return 'action';
-    }
-
-    // 3. Strings
-    if (stream.match(/^"[^"]*"/)) return 'string';
-    if (stream.match(/^'[^']*'/)) return 'string';
-
-    // 4. Modifiers at start of token (+, -, #)
-    if (stream.match(/^[+#\\-](?=\s*[A-Za-z0-9_$])/)) {
-      return 'modifier';
-    }
-
-    // 5. Words & Identifiers
-    const word = stream.match(/^[A-Za-z0-9_$/]+/);
-    if (word) {
-      const str = Array.isArray(word) ? word[0] : String(word);
-
-      // Top-level block declarations
-      if (
-        /^(class|interface|type|ui|db|api|event|state|abstract|function)$/i.test(
-          str
-        )
-      ) {
-        return 'keyword';
-      }
-
-      // Polymorphism inheritance & interface implementation
-      if (/^(extends|implements)$/i.test(str)) {
-        return 'keyword';
-      }
-
-      // Actions / Invocations
-      if (
-        /^(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)$/i.test(
-          str
-        )
-      ) {
-        return 'action';
-      }
-
-      // HTTP Verbs
-      if (/^(GET|POST|PUT|DELETE|PATCH)$/i.test(str)) {
-        return 'keyword';
-      }
-
-      // Modifiers
-      if (
-        /^(public|private|protected|readonly|get|set|override|static|async|prop|action)$/i.test(
-          str
-        )
-      ) {
-        return 'modifier';
-      }
-
-      // Database modifiers
-      if (/^(pk|fk|unique|nullable|index|default)$/i.test(str)) {
-        return 'modifier';
-      }
-
-      // Primitive types
-      if (
-        /^(string|number|boolean|any|void|never|unknown|uuid|text|int|serial|timestamp|jsonb)$/i.test(
-          str
-        )
-      ) {
-        return 'primitive';
-      }
-
-      // Method call or declaration: followed by '('
-      if (stream.peek() === '(') {
-        return 'function';
-      }
-
-      // Property declaration: followed by ':'
-      if (stream.peek() === ':') {
-        return 'property';
-      }
-
-      // Entity or Type name starting with capital letter
-      if (/^[A-Z]/.test(str)) {
-        return 'type';
-      }
-
-      return 'property';
-    }
-
-    // Punctuation
-    stream.next();
-    return null;
-  },
+export {
+  draftrEditorTheme,
+  draftrHighlightStyle,
+  draftrLanguage,
+  getDraftrEditorTheme,
+  getDraftrHighlightStyle,
 };
-
-export const draftrStreamLanguage = StreamLanguage.define(draftrStreamParser);
-
-/**
- * Dark theme token colors matching our design system
- */
-export const draftrDarkHighlightStyle = HighlightStyle.define([
-  {tag: t.keyword, color: '#f59e0b', fontWeight: 'bold'}, // Amber
-  {tag: t.controlKeyword, color: '#c084fc', fontWeight: 'bold'}, // Light purple
-  {tag: t.modifier, color: '#34d399', fontWeight: 'bold'}, // Emerald
-  {tag: t.typeName, color: '#a78bfa', fontWeight: '600'}, // Violet
-  {tag: t.standard(t.typeName), color: '#38bdf8', fontWeight: '500'}, // Sky blue
-  {tag: t.function(t.variableName), color: '#38bdf8', fontWeight: '600'}, // Sky blue
-  {tag: t.propertyName, color: '#f1f5f9', fontWeight: '600'}, // Slate 100
-  {tag: t.lineComment, color: '#94a3b8', fontStyle: 'italic'}, // Slate 400
-  {tag: t.string, color: '#fb7185'}, // Rose 400
-  {tag: t.punctuation, color: '#94a3b8'},
-  {tag: t.variableName, color: '#e2e8f0'}, // Slate 200
-]);
-
-/**
- * Light theme token colors with high contrast for white/light backgrounds
- */
-export const draftrLightHighlightStyle = HighlightStyle.define([
-  {tag: t.keyword, color: '#b45309', fontWeight: 'bold'}, // Amber 700
-  {tag: t.controlKeyword, color: '#7e22ce', fontWeight: 'bold'}, // Purple 700
-  {tag: t.modifier, color: '#047857', fontWeight: 'bold'}, // Emerald 700
-  {tag: t.typeName, color: '#6d28d9', fontWeight: '600'}, // Violet 700
-  {tag: t.standard(t.typeName), color: '#0284c7', fontWeight: '500'}, // Sky 700
-  {tag: t.function(t.variableName), color: '#0369a1', fontWeight: '600'}, // Sky 800
-  {tag: t.propertyName, color: '#0f172a', fontWeight: '600'}, // Slate 900 (dark text)
-  {tag: t.lineComment, color: '#64748b', fontStyle: 'italic'}, // Slate 500
-  {tag: t.string, color: '#be123c'}, // Rose 700
-  {tag: t.punctuation, color: '#64748b'},
-  {tag: t.variableName, color: '#334155'}, // Slate 700 (dark text)
-]);
-
-export const draftrHighlightStyle = draftrDarkHighlightStyle;
-
-export function getDraftrHighlightStyle(mode: 'dark' | 'light' = 'dark') {
-  return mode === 'light'
-    ? draftrLightHighlightStyle
-    : draftrDarkHighlightStyle;
-}
 
 export function computeDraftrIndent(prevLineText: string): number {
   const trimmed = prevLineText.trim();
@@ -294,7 +141,7 @@ export function handleDraftrShortcut(
     expansion = 'protected ';
   } else if (symbol === '->') {
     const ctx = getDraftrContext(view.state.doc, line.number);
-    expansion = ctx === 'ui' ? 'binds ' : 'calls ';
+    expansion = ctx === 'ui' ? 'call ' : 'call ';
   }
 
   if (expansion) {
@@ -416,85 +263,3 @@ export function createDraftrCompletions(project?: ArchitectureProject) {
     };
   };
 }
-
-/**
- * Editor Theme generator supporting light and dark modes
- */
-export function getDraftrEditorTheme(mode: 'dark' | 'light' = 'dark') {
-  const isDark = mode === 'dark';
-  return EditorView.theme(
-    {
-      '&': {
-        height: '100%',
-        fontSize: '12px',
-        fontFamily:
-          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        backgroundColor: 'transparent !important',
-        color: isDark ? '#f8fafc' : '#020617',
-      },
-      '.cm-scroller': {
-        backgroundColor: 'transparent !important',
-        fontFamily: 'inherit',
-      },
-      '.cm-content': {
-        caretColor: isDark ? '#f8fafc' : '#020617',
-        lineHeight: '20px',
-        padding: '12px 8px',
-      },
-      '.cm-cursor': {
-        borderLeftColor: isDark ? '#f8fafc' : '#020617',
-        borderLeftWidth: '2px',
-      },
-      '&.cm-focused .cm-selectionBackground, ::selection': {
-        backgroundColor: isDark
-          ? 'rgba(168, 85, 247, 0.25) !important'
-          : 'rgba(59, 130, 246, 0.2) !important',
-      },
-      '.cm-gutters': {
-        backgroundColor: 'transparent !important',
-        color: isDark ? '#94a3b8' : '#64748b',
-        borderRight: isDark
-          ? '1px solid rgba(255, 255, 255, 0.08)'
-          : '1px solid rgba(0, 0, 0, 0.08)',
-        fontFamily:
-          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-        fontSize: '11px',
-        paddingLeft: '4px',
-        paddingRight: '6px',
-      },
-      '.cm-activeLine': {
-        backgroundColor: isDark
-          ? 'rgba(255, 255, 255, 0.04)'
-          : 'rgba(0, 0, 0, 0.03)',
-      },
-      '.cm-activeLineGutter': {
-        backgroundColor: isDark
-          ? 'rgba(255, 255, 255, 0.06)'
-          : 'rgba(0, 0, 0, 0.05)',
-        color: isDark ? '#f8fafc' : '#020617',
-        fontWeight: 'bold',
-      },
-      '.cm-tooltip-autocomplete': {
-        backgroundColor: isDark ? '#020817' : '#ffffff',
-        border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0',
-        borderRadius: '6px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
-        padding: '4px',
-        color: isDark ? '#f8fafc' : '#020617',
-      },
-      '.cm-tooltip-autocomplete ul li': {
-        borderRadius: '4px',
-        padding: '3px 8px',
-      },
-      '.cm-tooltip-autocomplete ul li[aria-selected]': {
-        backgroundColor: isDark
-          ? 'rgba(168, 85, 247, 0.25)'
-          : 'rgba(59, 130, 246, 0.15)',
-        color: isDark ? '#ffffff' : '#020617',
-      },
-    },
-    {dark: isDark}
-  );
-}
-
-export const draftrEditorTheme = getDraftrEditorTheme('dark');

@@ -66,10 +66,12 @@ class Logger
     expect(start?.calls?.[0]).toEqual({
       targetClass: 'Pi',
       targetMethod: 'help',
+      verb: 'call',
     });
     expect(start?.calls?.[1]).toEqual({
       targetClass: 'OtherService',
       targetMethod: 'run',
+      verb: 'call',
     });
 
     const processMethod = main?.methods.find(m => m.name === 'process');
@@ -77,6 +79,7 @@ class Logger
     expect(processMethod?.calls?.[0]).toEqual({
       targetClass: 'Logger',
       targetMethod: 'log',
+      verb: 'call',
     });
 
     expect(result.connections.some(c => c.targetId === 'entity-Pi')).toBe(true);
@@ -219,9 +222,9 @@ event JobFailed(Error) -> Worker.cleanup()
 
     const doWork = worker?.methods.find(m => m.name === 'doWork');
     expect(doWork?.calls).toEqual([
-      {targetClass: 'Worker', targetMethod: 'helper'},
-      {targetClass: 'Worker', targetMethod: 'cleanup'},
-      {targetClass: 'Worker', targetMethod: 'notify'},
+      {targetClass: 'Worker', targetMethod: 'helper', verb: 'call'},
+      {targetClass: 'Worker', targetMethod: 'cleanup', verb: 'call'},
+      {targetClass: 'Worker', targetMethod: 'notify', verb: 'call'},
     ]);
 
     // Check connections generated for calls

@@ -1,4 +1,3 @@
-import {StringStream} from '@codemirror/language';
 import {
   ArrowRight,
   BookOpen,
@@ -9,9 +8,7 @@ import {
   Terminal,
   X,
 } from 'lucide-react';
-import React, {useMemo, useState} from 'react';
-
-import {draftrStreamParser} from '../editor/draftrCodeMirror';
+import React, {useState} from 'react';
 
 interface SyntaxDocPanelProps {
   isOpen: boolean;
@@ -25,57 +22,10 @@ interface SectionItem {
   code: string;
 }
 
-const tokenColorMap: Record<string, string> = {
-  keyword: 'text-amber-600 dark:text-amber-400 font-bold',
-  action: 'text-purple-600 dark:text-purple-400 font-bold',
-  modifier: 'text-emerald-600 dark:text-emerald-400 font-semibold',
-  type: 'text-violet-600 dark:text-violet-300 font-semibold',
-  primitive: 'text-sky-600 dark:text-sky-400 font-medium',
-  function: 'text-sky-600 dark:text-sky-400 font-semibold',
-  property: 'text-slate-900 dark:text-slate-100 font-medium',
-  comment: 'text-slate-500 dark:text-slate-400 italic',
-  string: 'text-rose-600 dark:text-rose-400',
-};
-
 export const HighlightedCodeSnippet: React.FC<{code: string}> = ({code}) => {
-  const parsedLines = useMemo(() => {
-    return code.split('\n').map(line => {
-      const stream = new StringStream(line, 2, 2);
-      const tokens: Array<{token: string | null; text: string}> = [];
-      while (!stream.eol()) {
-        const start = stream.pos;
-        const token = draftrStreamParser.token(stream);
-        tokens.push({
-          token,
-          text: stream.string.slice(start, stream.pos),
-        });
-      }
-      return tokens;
-    });
-  }, [code]);
-
   return (
-    <pre className="p-2.5 rounded-md bg-background/90 dark:bg-slate-950/80 border border-border font-mono text-[11px] overflow-x-auto leading-5 whitespace-pre select-text">
-      {parsedLines.map((tokens, lineIdx) => (
-        <div key={`line-${lineIdx}`} className="min-h-[1.25rem]">
-          {tokens.length === 0 ? (
-            <span>&nbsp;</span>
-          ) : (
-            tokens.map((t, tokIdx) => (
-              <span
-                key={`tok-${lineIdx}-${tokIdx}`}
-                className={
-                  t.token
-                    ? tokenColorMap[t.token] || 'text-foreground'
-                    : 'text-slate-600 dark:text-slate-400'
-                }
-              >
-                {t.text}
-              </span>
-            ))
-          )}
-        </div>
-      ))}
+    <pre className="text-[10px] sm:text-[11px] leading-relaxed font-mono p-2.5 rounded-md bg-zinc-950 dark:bg-zinc-900 border border-zinc-800 dark:border-zinc-700 text-zinc-100 overflow-x-auto">
+      <code>{code}</code>
     </pre>
   );
 };

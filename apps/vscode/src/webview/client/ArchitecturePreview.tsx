@@ -200,10 +200,26 @@ export const ArchitecturePreview: React.FC = () => {
                   ? '#a855f7'
                   : '#8b5cf6';
 
+        let targetId = conn.targetId;
+        if (targetId.startsWith('unresolved-')) {
+          const rawName = targetId.slice('unresolved-'.length);
+          const matched = generatedNodes.find(
+            n =>
+              n.id === `entity-${rawName}` ||
+              n.id === `ui-${rawName}` ||
+              n.id === `table-${rawName}` ||
+              n.id === `api-${rawName}` ||
+              n.id === `event-${rawName}`
+          );
+          if (matched) {
+            targetId = matched.id;
+          }
+        }
+
         generatedEdges.push({
           id: conn.id,
           source: conn.sourceId,
-          target: conn.targetId,
+          target: targetId,
           animated: conn.type === 'invokes' || conn.type === 'binds',
           label: conn.type,
           style: {stroke: edgeColor, strokeWidth: 2},
@@ -269,24 +285,35 @@ export const ArchitecturePreview: React.FC = () => {
         </div>
       </div>
       <div className="canvas-wrapper">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          fitView
-        >
-          <Background
-            color="var(--vscode-editor-lineHighlightBackground, #2d3748)"
-            gap={16}
-          />
-          <Controls />
-          <MiniMap
-            nodeColor="#8b5cf6"
-            maskColor="rgba(0, 0, 0, 0.4)"
-            style={{background: 'var(--vscode-editor-background, #1e1e1e)'}}
-          />
-        </ReactFlow>
+        {nodes.length === 0 ? (
+          <div className="empty-preview-state">
+            <div className="empty-title">Draftr Architecture Diagram</div>
+            <p className="empty-desc">
+              Define entities (such as <code>class</code>, <code>ui</code>,{' '}
+              <code>api</code>, <code>db</code>, or <code>event</code>) in your
+              Draftr document to render the interactive diagram here.
+            </p>
+          </div>
+        ) : (
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            fitView
+          >
+            <Background
+              color="var(--vscode-editor-lineHighlightBackground, #2d3748)"
+              gap={16}
+            />
+            <Controls />
+            <MiniMap
+              nodeColor="#8b5cf6"
+              maskColor="rgba(0, 0, 0, 0.4)"
+              style={{background: 'var(--vscode-editor-background, #1e1e1e)'}}
+            />
+          </ReactFlow>
+        )}
       </div>
     </div>
   );

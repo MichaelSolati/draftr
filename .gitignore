@@ -17,6 +17,8 @@ coverage
 graphify-out
 *.vsix
 *.draftr
+!sample.draftr
+!apps/web/src/lib/store/sample.draftr
 
 # Editor directories and files
 .vscode/*

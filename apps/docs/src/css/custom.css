@@ -52,3 +52,9 @@
   border-top: 1px solid var(--ifm-border-color);
   background-color: var(--ifm-navbar-background-color);
 }
+
+/* Better code block contrast */
+.prism-code {
+  border: 1px solid var(--ifm-border-color);
+  border-radius: 0.5rem;
+}

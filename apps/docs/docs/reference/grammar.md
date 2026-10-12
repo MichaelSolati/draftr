@@ -37,14 +37,26 @@ FunctionDecl     ::= [ Visibility ] "function" Identifier "(" [ ParamList ] ")" 
 
 Member           ::= [ Visibility ] [ Modifier ] Identifier [ "?" ] [ "(" [ ParamList ] ")" ] [ ":" Type ] Newline [ InvocationList ] ;
 
+MemberList       ::= ( Indent2 Member )* ;
+InterfaceMemberList ::= ( Indent2 Member )* ;
+PropertyList     ::= ( Indent2 Identifier [ "?" ] ":" Type Newline )* ;
+ColumnList       ::= ( Indent2 [ ColumnConstraint ] Identifier ":" Type Newline )* ;
+EndpointList     ::= ( Indent2 HttpVerb Path [ "(" [ ParamList ] ")" ] [ ":" Type ] Newline [ InvocationList ] )* ;
+UiMemberList     ::= ( Indent2 ( "prop" Identifier [ "?" ] ":" Type | "emit" Identifier [ "(" Type ")" ] | "render" Target ) Newline )* ;
+StateMemberList  ::= ( Indent2 ( Identifier [ "?" ] ":" Type | "get" Identifier ":" Type | "action" Identifier "(" [ ParamList ] ")" Newline [ InvocationList ] ) )* ;
+
 Invocation       ::= Indent4 Verb Target [ "(" [ Payload ] ")" ] Newline ;
 Verb             ::= "call" | "emit" | "dispatch" | "query" | "mutate" | "render" ;
 
 Visibility       ::= "public" | "private" | "protected" | "readonly" ;
 Modifier         ::= "get" | "set" | "static" | "async" | "action" | "prop" | "emit" | "param" | "return" ;
 ColumnConstraint ::= "pk" | "fk" | "unique" | "nullable" | "index" | "default" ;
+HttpVerb         ::= "GET" | "POST" | "PUT" | "DELETE" | "PATCH" ;
 
 Type             ::= SimpleType ( "|" SimpleType )* ;
 SimpleType       ::= Identifier [ "?" ] [ "[]" ] ;
 Target           ::= Identifier [ "." Identifier ] ;
+ParamList        ::= Identifier [ "?" ] ":" Type ( "," Identifier [ "?" ] ":" Type )* ;
+Indent2          ::= "  " ;
+Indent4          ::= "    " ;
 ```

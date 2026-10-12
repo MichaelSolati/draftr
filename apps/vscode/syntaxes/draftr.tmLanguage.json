@@ -79,7 +79,7 @@
     "actions": {
       "patterns": [
         {
-          "match": "\\b(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\\b\\s+([A-Za-z0-9_$]+)\\s*\\(",
+          "match": "\\b(call|emit|dispatch|query|mutate|render)\\b\\s+([A-Za-z0-9_$]+)\\s*\\(",
           "captures": {
             "1": { "name": "keyword.control.action.draftr" },
             "2": { "name": "entity.name.function.draftr" }
@@ -93,7 +93,7 @@
           }
         },
         {
-          "match": "\\b(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\\b\\s+([A-Za-z0-9_$]+)(?:\\.([A-Za-z0-9_$]+))?",
+          "match": "\\b(call|emit|dispatch|query|mutate|render)\\b\\s+([A-Za-z0-9_$]+)(?:\\.([A-Za-z0-9_$]+))?",
           "captures": {
             "1": { "name": "keyword.control.action.draftr" },
             "2": { "name": "entity.name.type.class.draftr" },
@@ -109,7 +109,7 @@
           }
         },
         {
-          "match": "\\b(binds?|calls?|invokes?|emit|emits?|dispatch|dispatches?|query|queries?|mutate|mutates?|render|renders?)\\b",
+          "match": "\\b(call|emit|dispatch|query|mutate|render)\\b",
           "name": "keyword.control.action.draftr"
         },
         {

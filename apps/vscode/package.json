@@ -2,7 +2,7 @@
   "name": "draftr-vscode",
   "displayName": "draftr",
   "description": "Language support, syntax highlighting, and architecture linting for draftr (.draftr) files",
-  "version": "0.1.3",
+  "version": "0.0.0",
   "publisher": "draftr",
   "repository": {
     "type": "git",
@@ -18,7 +18,11 @@
     "Snippets"
   ],
   "activationEvents": [
-    "onLanguage:draftr"
+    "onLanguage:draftr",
+    "onCommand:draftr.openPreview",
+    "onCommand:draftr.scaffold",
+    "onCommand:draftr.importSql",
+    "onCommand:draftr.importTypeScript"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -68,18 +72,23 @@
       "editor/title": [
         {
           "command": "draftr.openPreview",
-          "when": "resourceLangId == draftr",
+          "when": "editorLangId == draftr || resourceLangId == draftr",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "draftr.openPreview",
+          "when": "editorLangId == draftr || resourceLangId == draftr",
           "group": "navigation"
         }
       ],
       "commandPalette": [
         {
-          "command": "draftr.openPreview",
-          "when": "resourceLangId == draftr"
+          "command": "draftr.openPreview"
         },
         {
-          "command": "draftr.scaffold",
-          "when": "resourceLangId == draftr"
+          "command": "draftr.scaffold"
         },
         {
           "command": "draftr.importSql"
@@ -88,7 +97,19 @@
           "command": "draftr.importTypeScript"
         }
       ]
-    }
+    },
+    "themes": [
+      {
+        "label": "Draftr Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/draftr-dark-color-theme.json"
+      },
+      {
+        "label": "Draftr Light",
+        "uiTheme": "vs",
+        "path": "./themes/draftr-light-color-theme.json"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -104,6 +125,7 @@
   "dependencies": {
     "@dagrejs/dagre": "^3.1.1",
     "@draftr/core": "*",
+    "@draftr/language-service": "*",
     "@xyflow/react": "^12.12.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.52.0",

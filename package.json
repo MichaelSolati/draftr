@@ -1,7 +1,7 @@
 {
   "name": "draftr-monorepo",
   "private": true,
-  "version": "0.1.3",
+  "version": "0.0.0",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -13,7 +13,7 @@
     "test": "npm run test --workspaces --if-present",
     "coverage": "npm run coverage --workspaces --if-present",
     "lint": "run-p lint:*",
-    "lint:typescript": "npx tsc -p packages/core/tsconfig.json --noEmit && npx tsc -p apps/web/tsconfig.json --noEmit && npx tsc -p apps/vscode/tsconfig.json --noEmit && npx tsc -p apps/docs/tsconfig.json --noEmit",
+    "lint:typescript": "npx tsc -p packages/core/tsconfig.json --noEmit && npx tsc -p packages/grammar/tsconfig.json --noEmit && npx tsc -p packages/language-service/tsconfig.json --noEmit && npx tsc -p packages/theme/tsconfig.json --noEmit && npx tsc -p apps/web/tsconfig.json --noEmit && npx tsc -p apps/vscode/tsconfig.json --noEmit && npx tsc -p apps/docs/tsconfig.json --noEmit",
     "lint:gts": "gts lint",
     "fix": "run-p fix:*",
     "fix:gts": "gts fix",

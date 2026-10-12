@@ -142,11 +142,13 @@ export function lintArchitecture(
       if (!visited.has(neighbor)) {
         detectCycle(neighbor, [...path, neighbor]);
       } else if (recursionStack.has(neighbor)) {
+        const currentCls = project.classes.find(c => c.name === current);
         issues.push({
           id: `cycle-${current}-${neighbor}`,
           severity: 'warning',
           title: 'Circular Dependency Detected',
           description: `Circular call chain detected: ${[...path, neighbor].join(' ➔ ')}`,
+          affectedEntityId: currentCls ? currentCls.id : `entity-${current}`,
         });
       }
     }

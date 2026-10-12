@@ -7,11 +7,13 @@ import {registerCompletions} from './providers/completions';
 import {registerDefinitions} from './providers/definitions';
 import {registerDiagnostics} from './providers/diagnostics';
 import {registerHover} from './providers/hover';
+import {registerSemanticTokens} from './providers/semanticTokens';
 import {registerSymbols} from './providers/symbols';
 import {registerPreviewPanel} from './webview/previewPanel';
 
 export function activate(context: vscode.ExtensionContext) {
   // 1. Register Language Features
+  registerSemanticTokens(context);
   registerDiagnostics(context);
   registerCompletions(context);
   registerSymbols(context);

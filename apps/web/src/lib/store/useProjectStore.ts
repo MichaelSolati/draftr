@@ -18,47 +18,10 @@ import {
   saveProject,
   setActiveProjectId,
 } from '../storage/db';
+import defaultOutline from './sample.draftr?raw';
 
 export const DEFAULT_PROJECT_ID = 'default-project-1';
-
-export const DEFAULT_OUTLINE = `// Logic Entities
-class AuthService
-  + token: string
-  + login(creds: Credentials): Session -> Database.query
-  - hashPassword(password: string): string
-
-class UserService
-  + getProfile(id: string): UserProfile
-  + sendWelcome(email: string): boolean
-
-class Database
-  + query(sql: string): QueryResult
-
-// Database Schema
-db Users
-  + id: uuid pk
-  + email: string unique
-  + teamId: uuid fk -> Teams.id
-  + createdAt: timestamp
-
-db Teams
-  + id: uuid pk
-  + name: string
-
-// API Endpoints
-api /api/v1/auth
-  + POST /login(LoginDTO): Session -> AuthService.login
-
-// Event Streaming
-event UserRegistered(UserEvent) -> UserService.sendWelcome
-
-// UI Hierarchy
-ui App
-  ui Header
-    binds AuthService
-  ui Dashboard
-    binds UserService
-`;
+export const DEFAULT_OUTLINE = defaultOutline;
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleAutosave(project: ArchitectureProject) {
@@ -388,7 +351,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
 
         let cleanMethodLine = methodLine;
         const arrowIndex = methodLine.indexOf('->');
-        const callsIndex = methodLine.search(/\b(?:calls|invokes)\b/i);
+        const callsIndex = methodLine.search(/\b(?:call|invokes)\b/i);
         if (arrowIndex !== -1) {
           cleanMethodLine = methodLine.slice(0, arrowIndex).trimEnd();
         } else if (callsIndex !== -1) {
@@ -405,14 +368,14 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
           ? `.${targetMember}${isMethod ? '()' : ''}`
           : '';
         const callTarget = `${targetEntity}${targetMemberSuffix}`;
-        const callLine = `${callIndent}calls ${callTarget}`;
+        const callLine = `${callIndent}call ${callTarget}`;
 
         let insertAt = methodIdx + 1;
         let alreadyExists = false;
         while (insertAt < lines.length) {
           const nextTrimmed = lines[insertAt].trim();
           if (
-            nextTrimmed.startsWith('calls ') ||
+            nextTrimmed.startsWith('call ') ||
             nextTrimmed.startsWith('invokes ') ||
             nextTrimmed.startsWith('->') ||
             nextTrimmed.startsWith('- ') ||
@@ -474,8 +437,8 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => ({
       const level2Indent = prevIndentMatch ? prevIndentMatch[1] : '  ';
 
       const directive = isUI
-        ? `${level2Indent}binds ${targetEntity}`
-        : `${level2Indent}calls ${targetEntity}${targetMember ? '.' + targetMember : ''}`;
+        ? `${level2Indent}call ${targetEntity}`
+        : `${level2Indent}call ${targetEntity}${targetMember ? '.' + targetMember : ''}`;
       const alreadyExists = lines
         .slice(0, insertIndex)
         .some(l => l.trim() === directive.trim());

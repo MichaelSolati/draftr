@@ -1,0 +1,17 @@
+{
+  "name": "Draftr Light",
+  "type": "light",
+  "semanticHighlighting": true,
+  "semanticTokenColors": {
+    "keyword": "#7e22ce",
+    "modifier": "#047857",
+    "variable": "#0f172a",
+    "function": "#a16207",
+    "type": "#0284c7",
+    "class": "#b45309",
+    "string": "#be123c",
+    "namespace": "#0f766e",
+    "enum": "#b45309",
+    "interface": "#b45309"
+  }
+}

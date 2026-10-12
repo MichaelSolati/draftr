@@ -54,6 +54,17 @@ export class DraftrPreviewPanel {
 
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
+    // Sync when webview panel becomes visible
+    this._panel.onDidChangeViewState(
+      e => {
+        if (e.webviewPanel.visible) {
+          this.syncProject();
+        }
+      },
+      null,
+      this._disposables
+    );
+
     // Listen for messages from webview
     this._panel.webview.onDidReceiveMessage(
       message => {
@@ -75,6 +86,9 @@ export class DraftrPreviewPanel {
       null,
       this._disposables
     );
+
+    // Initial sync
+    setTimeout(() => this.syncProject(), 100);
   }
 
   public setDocument(doc: vscode.TextDocument) {
@@ -93,8 +107,8 @@ export class DraftrPreviewPanel {
         type: 'sync',
         project,
       });
-    } catch {
-      // Ignore parse glitches during fast typing
+    } catch (err) {
+      console.error('[Draftr] Error syncing project to preview:', err);
     }
   }
 
@@ -122,7 +136,7 @@ export class DraftrPreviewPanel {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource};">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; font-src ${webview.cspSource}; img-src ${webview.cspSource} https: data:;">
   <title>Draftr Architecture Preview</title>
   <link rel="stylesheet" href="${styleUri}">
 </head>
@@ -149,15 +163,71 @@ export function registerPreviewPanel(
 ): vscode.Disposable {
   const disposable = vscode.commands.registerCommand(
     'draftr.openPreview',
-    () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) {
+    async (uri?: vscode.Uri) => {
+      let document: vscode.TextDocument | undefined;
+
+      // 1. If invoked with a file URI (e.g. from editor title, explorer context, or command args)
+      if (uri instanceof vscode.Uri) {
+        try {
+          document = await vscode.workspace.openTextDocument(uri);
+        } catch {
+          // Continue to fallback
+        }
+      }
+
+      // 2. If active text editor is open
+      if (!document && vscode.window.activeTextEditor) {
+        document = vscode.window.activeTextEditor.document;
+      }
+
+      // 3. Fallback: check visible text editors for any .draftr file
+      if (
+        !document ||
+        (document.languageId !== 'draftr' &&
+          !document.fileName.endsWith('.draftr'))
+      ) {
+        const visibleDraftr = vscode.window.visibleTextEditors.find(
+          e =>
+            e.document.languageId === 'draftr' ||
+            e.document.fileName.endsWith('.draftr')
+        );
+        if (visibleDraftr) {
+          document = visibleDraftr.document;
+        }
+      }
+
+      // 4. Fallback: find any .draftr file in the workspace (e.g. sample.draftr)
+      if (
+        !document ||
+        (document.languageId !== 'draftr' &&
+          !document.fileName.endsWith('.draftr'))
+      ) {
+        try {
+          const files = await vscode.workspace.findFiles(
+            '**/*.draftr',
+            '**/node_modules/**',
+            1
+          );
+          if (files.length > 0) {
+            document = await vscode.workspace.openTextDocument(files[0]);
+            await vscode.window.showTextDocument(
+              document,
+              vscode.ViewColumn.One
+            );
+          }
+        } catch {
+          // Ignore
+        }
+      }
+
+      if (!document) {
         vscode.window.showInformationMessage(
-          'Please open a Draftr file to view architecture diagram.'
+          'Please open or create a Draftr (.draftr) file to view the architecture diagram.'
         );
         return;
       }
-      DraftrPreviewPanel.createOrShow(context.extensionUri, editor.document);
+
+      DraftrPreviewPanel.createOrShow(context.extensionUri, document);
     }
   );
   context.subscriptions.push(disposable);

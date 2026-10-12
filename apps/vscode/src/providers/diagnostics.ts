@@ -62,11 +62,71 @@ export function computeDiagnostics(
 
     let lineIdx = 0;
     if (targetEntity) {
+      const declRegex = new RegExp(
+        '^(?:abstract\\s+class|class|interface|type|ui|db|api|event|state)\\s+' +
+          targetEntity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+          '\\b'
+      );
+      let foundDecl = false;
       for (let i = 0; i < document.lineCount; i++) {
-        const lineText = document.lineAt(i).text;
-        if (lineText.includes(targetEntity)) {
+        const lineText = document.lineAt(i).text.trim();
+        if (declRegex.test(lineText)) {
           lineIdx = i;
+          foundDecl = true;
           break;
+        }
+      }
+      if (!foundDecl) {
+        for (let i = 0; i < document.lineCount; i++) {
+          const lineText = document.lineAt(i).text;
+          if (lineText.includes(targetEntity)) {
+            lineIdx = i;
+            break;
+          }
+        }
+      }
+    }
+
+    // For circular dependencies or specific member references, pinpoint the offending statement
+    if (issue.id.startsWith('cycle-')) {
+      const parts = issue.id.split('-');
+      // format: cycle-CurrentEntity-NeighborEntity
+      const neighbor = parts.length >= 3 ? parts[2] : '';
+      if (neighbor) {
+        // Search inside targetEntity's block for the call to neighbor
+        for (let i = lineIdx + 1; i < document.lineCount; i++) {
+          const rawLine = document.lineAt(i).text;
+          // Stop if another top-level declaration begins (starts at column 0)
+          if (
+            rawLine.trim() &&
+            !rawLine.startsWith(' ') &&
+            !rawLine.startsWith('\t')
+          ) {
+            break;
+          }
+          if (rawLine.includes(neighbor)) {
+            lineIdx = i;
+            break;
+          }
+        }
+      }
+    } else if (issue.id.startsWith('ui-db-leak-')) {
+      const parts = issue.id.split('-');
+      const bound = parts.length >= 4 ? parts[3] : '';
+      if (bound) {
+        for (let i = lineIdx + 1; i < document.lineCount; i++) {
+          const rawLine = document.lineAt(i).text;
+          if (
+            rawLine.trim() &&
+            !rawLine.startsWith(' ') &&
+            !rawLine.startsWith('\t')
+          ) {
+            break;
+          }
+          if (rawLine.includes(bound)) {
+            lineIdx = i;
+            break;
+          }
         }
       }
     }

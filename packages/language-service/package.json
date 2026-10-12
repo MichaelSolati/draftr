@@ -1,0 +1,19 @@
+{
+  "name": "@draftr/language-service",
+  "version": "0.0.0",
+  "description": "Language server utilities (autocomplete, hover, indentation) for Draftr",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@draftr/core": "*",
+    "@draftr/grammar": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

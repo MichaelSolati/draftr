@@ -1,6 +1,7 @@
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import {themes as prismThemes} from 'prism-react-renderer';
+import {draftrLightPrismTheme, draftrDarkPrismTheme} from '@draftr/theme';
 
 const config: Config = {
   title: 'Draftr Docs',
@@ -20,6 +21,7 @@ const config: Config = {
     locales: ['en'],
   },
 
+  clientModules: [require.resolve('./src/prism-draftr.ts')],
   presets: [
     [
       'classic',
@@ -95,8 +97,8 @@ const config: Config = {
       copyright: `Copyright © ${new Date().getFullYear()} Draftr. Built with Docusaurus.`,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      theme: draftrLightPrismTheme,
+      darkTheme: draftrDarkPrismTheme,
       additionalLanguages: ['bash', 'typescript', 'json', 'mermaid'],
     },
   } satisfies Preset.ThemeConfig,
